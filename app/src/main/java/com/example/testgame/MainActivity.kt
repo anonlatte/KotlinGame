@@ -17,11 +17,15 @@ import kotlin.math.pow
 
 class MainActivity : SimpleBaseGameActivity(), IOnSceneTouchListener {
 
+    private var mCharacter: Character? = null
     private var mTextures: Textures? = null
     private var mCamera: Camera? = null
 
     private var controllerStickSprite: Sprite? = null
     private lateinit var defaultStickPos: ArrayList<Float>
+
+    val frameDuration = longArrayOf(125, 125, 125, 125)
+    private var characterAnimation: AnimatedSprite? = null
 
     companion object {
         private var CAMERA_WIDTH: Float = 0.0f
@@ -46,6 +50,7 @@ class MainActivity : SimpleBaseGameActivity(), IOnSceneTouchListener {
 
     override fun onCreateResources() {
         mTextures = Textures(this, engine)
+        mCharacter = Character(this, engine)
     }
 
     override fun onCreateScene(): Scene {
@@ -85,22 +90,19 @@ class MainActivity : SimpleBaseGameActivity(), IOnSceneTouchListener {
                 vertexBufferObjectManager
             )
 
-        val adventurerIdlePos = AnimatedSprite(
+
+        // Set default animation
+        characterAnimation = mCharacter!!.setIdleAnimation(
             300F,
-            CAMERA_HEIGHT - 270,
-            350F,
-            259F,
-            mTextures!!.adventurerTextureRegion,
-            vertexBufferObjectManager
+            CAMERA_HEIGHT - 270
         )
-        val frameDuration = longArrayOf(150, 150, 150, 150)
-        adventurerIdlePos.animate(frameDuration)
+        characterAnimation!!.animate(frameDuration)
 
         scene.background = backgroundSprite
         scene.attachChild(controllerStickSprite)
         scene.attachChild(controllerSprite)
 
-        scene.attachChild(adventurerIdlePos)
+        scene.attachChild(characterAnimation)
 
         // Joystick motion
         scene.onSceneTouchListener = this
@@ -111,7 +113,6 @@ class MainActivity : SimpleBaseGameActivity(), IOnSceneTouchListener {
         if (pSceneTouchEvent!!.isActionMove) {
             val xPos = pSceneTouchEvent.x
             val yPos = pSceneTouchEvent.y
-
             // Stick position checking
             val displacement =
                 (mTextures!!.mControllerFrame!!.width / 2 - xPos - mTextures!!.mControllerStick!!.width / 2).toDouble().pow(
@@ -124,9 +125,28 @@ class MainActivity : SimpleBaseGameActivity(), IOnSceneTouchListener {
                 (mTextures!!.mControllerFrame!!.width / 2 + mTextures!!.mControllerStick!!.width / 2).toDouble()
                     .pow(2.0)
 
+            if (!mCharacter!!.isAnimationChanged && mCharacter!!.isActionGoing) {
+                mCharacter!!.isAnimationChanged = true
+                // Clear previous animation
+                pScene!!.detachChild(characterAnimation)
+
+                // Set new animation
+                characterAnimation = mCharacter!!.setRunAnimation(
+                    300F,
+                    CAMERA_HEIGHT - 270
+                )
+
+                characterAnimation!!.animate(frameDuration)
+                pScene.attachChild(characterAnimation)
+            }
+
+            // If it's inside the joystick frame
+            // set touch position
             if (displacement <= baseRadius) {
                 controllerStickSprite!!.setPosition(xPos, yPos)
-            } else {
+            }
+            // If outside the frame, set position near the frame to the same direction
+            else {
                 val ratio = baseRadius / displacement
                 val constrainedX = defaultStickPos[0] + (xPos - defaultStickPos[0]) * ratio
                 val constrainedY = defaultStickPos[1] + (yPos - defaultStickPos[1]) * ratio
@@ -136,10 +156,31 @@ class MainActivity : SimpleBaseGameActivity(), IOnSceneTouchListener {
                     (constrainedY).toFloat()
                 )
             }
-            return true
 
-        } else {
+            mCharacter!!.isActionGoing = true
+            return true
+        }
+        // On cancel set stick to the default position
+        else {
+            mCharacter!!.isActionGoing = false
+            mCharacter!!.isAnimationChanged = false
+
+            // Clean run animation
+            pScene!!.detachChild(characterAnimation)
+
+
+            // Set default idle animation
+            characterAnimation = mCharacter!!.setIdleAnimation(
+                300F,
+                CAMERA_HEIGHT - 270
+            )
+            characterAnimation!!.animate(frameDuration)
+            // Set idle animation
+            pScene.attachChild(characterAnimation)
+
+            // Change the stick position
             controllerStickSprite!!.setPosition(defaultStickPos[0], defaultStickPos[1])
+
             return false
         }
     }
