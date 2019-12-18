@@ -28,6 +28,7 @@ class MainActivity : SimpleBaseGameActivity() {
     private var parallaxPosition: Float = 1F
     private var mCharacter: Character? = null
     private var mTextures: Textures? = null
+    private var mItems: Items? = null
     private var mCamera: Camera? = null
 
     private var controllerStickSprite: Sprite? = null
@@ -273,6 +274,7 @@ class MainActivity : SimpleBaseGameActivity() {
             // TODO if enemies more then 10, remove 1 of them
             //
             val enemiesList = mutableMapOf<Enemies, AnimatedSprite>()
+            val itemsList = mutableMapOf<Items, AnimatedSprite>()
             timer = Timer()
             timerTask = object : TimerTask() {
                 override fun run() {
@@ -426,13 +428,28 @@ class MainActivity : SimpleBaseGameActivity() {
                         if (characterAnimation!!.collidesWith(it.value)) {
                             if (mCharacter!!.characterConditions["attack"]!!["state"] == true) {
                                 if (it.key.healthPoints <= 0) {
+                                    // Make heal
+                                    mCharacter!!.healthPoints += 5F
+                                    healthBar!!.width += CAMERA_WIDTH * (50 / CAMERA_WIDTH)
+
+                                    // Drop a coin
+                                    val mItems = Items(this@MainActivity, engine)
+                                    val coinSprite = mItems.dropCoin(
+                                        CAMERA_WIDTH - 128F - itemsList.size * 64,
+                                        10F
+                                    )
+                                    itemsList[mItems] = coinSprite
+                                    scene.attachChild(coinSprite)
+
                                     runOnUpdateThread {
                                         scene.detachChild(it.value)
                                     }
                                     runOnUiThread {
-                                        if (it.value == enemiesList.getValue(it.key)) {
-                                            if (enemiesList.containsKey(it.key))
-                                                enemiesList.remove(it.key)
+                                        if (enemiesList.containsKey(it.key)) {
+                                            if (it.value == enemiesList.getValue(it.key)) {
+                                                if (enemiesList.containsKey(it.key))
+                                                    enemiesList.remove(it.key)
+                                            }
                                         }
                                     }
                                 } else {
