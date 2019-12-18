@@ -26,11 +26,19 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
 
     var attackButtonTextureRegion: ITextureRegion? = null
 
-
     private var mActivity: BaseGameActivity? = null
     private var engine: Engine? = null
     var isAnimationChanged: Boolean = false
     var isActionGoing: Boolean = false
+
+    var characterConditions = mapOf(
+        "idle" to mapOf("active" to false, "state" to false),
+        "run" to mapOf("active" to false, "state" to false),
+        "attack" to mapOf("active" to false, "state" to false),
+        "die" to mapOf("active" to false, "state" to false)
+    )
+    var healthPoints = 100F
+    var manaPoints = 100F
 
     companion object {
         // Sizes of the character
@@ -123,6 +131,17 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
             characterWidth,
             characterHeight,
             adventurerRunTextureRegion,
+            engine!!.vertexBufferObjectManager
+        )
+    }
+
+    fun setAttackAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
+        return AnimatedSprite(
+            xPosition,
+            yPosition,
+            characterWidth,
+            characterHeight,
+            adventurerAttackTextureRegion,
             engine!!.vertexBufferObjectManager
         )
     }

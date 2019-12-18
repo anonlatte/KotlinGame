@@ -1,6 +1,7 @@
 package com.example.testgame
 
 import android.graphics.Point
+import android.util.Log
 import org.andengine.engine.camera.Camera
 import org.andengine.engine.options.EngineOptions
 import org.andengine.engine.options.ScreenOrientation
@@ -85,7 +86,7 @@ class MainActivity : SimpleBaseGameActivity() {
             mTextures!!.mControllerFrame,
             vertexBufferObjectManager
         ) {
-
+            // TODO separate this event to another method
             override fun onAreaTouched(
                 pSceneTouchEvent: TouchEvent?,
                 pTouchAreaLocalX: Float,
@@ -93,7 +94,6 @@ class MainActivity : SimpleBaseGameActivity() {
             ): Boolean {
                 if (pSceneTouchEvent!!.isActionMove) {
                     if (pSceneTouchEvent.x <= 500) {
-
                         mCharacter!!.isActionGoing = true
 
                         val xPos = pSceneTouchEvent.x
@@ -168,7 +168,6 @@ class MainActivity : SimpleBaseGameActivity() {
             }
         }
 
-        scene.registerTouchArea(controllerSprite)
 
         defaultStickPos = arrayListOf(
             controllerSprite.width / 2 - mTextures!!.mControllerStick!!.width / 2,
@@ -183,13 +182,41 @@ class MainActivity : SimpleBaseGameActivity() {
                 vertexBufferObjectManager
             )
 
-        attackButtonSprite = Sprite(
+        attackButtonSprite = object : Sprite(
             CAMERA_WIDTH - 200F - controllerStickSprite!!.x,
             controllerStickSprite!!.y - 200F / 4,
             200F, 200F,
             mCharacter!!.attackButtonTextureRegion,
             vertexBufferObjectManager
-        )
+        ) {
+            override fun onAreaTouched(
+                pSceneTouchEvent: TouchEvent?,
+                pTouchAreaLocalX: Float,
+                pTouchAreaLocalY: Float
+            ): Boolean {
+                if (pSceneTouchEvent!!.isActionDown) {
+                    scene.detachChild(characterAnimation)
+                    characterAnimation = mCharacter!!.setAttackAnimation(
+                        characterPositionX,
+                        characterPositionY
+                    )
+                    characterAnimation!!.animate(frameDuration)
+                    scene.attachChild(characterAnimation)
+                    Log.v("AreaTouch", "Spell is used")
+                } else if (!pSceneTouchEvent.isActionUp) {
+                    scene.detachChild(characterAnimation)
+                    characterAnimation = mCharacter!!.setIdleAnimation(
+                        characterPositionX,
+                        characterPositionY
+                    )
+                    characterAnimation!!.animate(frameDuration)
+                    scene.attachChild(characterAnimation)
+                }
+                return true
+            }
+        }
+
+        // Character attack animation
 
         // Set default animation
         characterAnimation = mCharacter!!.setIdleAnimation(
@@ -200,12 +227,15 @@ class MainActivity : SimpleBaseGameActivity() {
 
         scene.background = backgroundSprite
 
-//        scene.background = backgroundSprite
         scene.attachChild(controllerStickSprite)
         scene.attachChild(controllerSprite)
         scene.attachChild(attackButtonSprite)
 
         scene.attachChild(characterAnimation)
+
+        // Register touch areas
+        scene.registerTouchArea(controllerSprite)
+        scene.registerTouchArea(attackButtonSprite)
 
         // Joystick motion
         return scene
