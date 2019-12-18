@@ -2,16 +2,11 @@ package com.example.testgame
 
 import org.andengine.engine.Engine
 import org.andengine.entity.sprite.AnimatedSprite
-import org.andengine.opengl.texture.ITexture
 import org.andengine.opengl.texture.TextureOptions
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
-import org.andengine.opengl.texture.bitmap.BitmapTexture
-import org.andengine.opengl.texture.region.ITextureRegion
 import org.andengine.opengl.texture.region.ITiledTextureRegion
-import org.andengine.opengl.texture.region.TextureRegionFactory
 import org.andengine.ui.activity.BaseGameActivity
-import org.andengine.util.adt.io.`in`.IInputStreamOpener
 import org.andengine.util.debug.Debug
 import java.io.IOException
 
@@ -24,12 +19,9 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     private var adventurerAttackTextureRegion: ITiledTextureRegion? = null
     private var adventurerDieTextureRegion: ITiledTextureRegion? = null
 
-    var attackButtonTextureRegion: ITextureRegion? = null
 
-    private var mActivity: BaseGameActivity? = null
-    private var engine: Engine? = null
-    var isAnimationChanged: Boolean = false
-    var isActionGoing: Boolean = false
+    protected var mActivity: BaseGameActivity? = null
+    protected var engine: Engine? = null
 
     var characterConditions = mutableMapOf(
         "idle" to mutableMapOf("active" to true, "state" to true),
@@ -39,6 +31,7 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     )
     var healthPoints = 100F
     var manaPoints = 100F
+    val frameDuration = longArrayOf(125, 125, 125, 125)
 
     companion object {
         // Sizes of the character
@@ -64,9 +57,6 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
             val adventurerDieTexture =
                 BitmapTextureAtlas(engine.textureManager, 350, 37, TextureOptions.BILINEAR)
 
-            val attackButtonTexture: ITexture =
-                BitmapTexture(engine.textureManager,
-                    IInputStreamOpener { activity.assets.open("itemPack/Item__06.png") })
 
             // Setting up frames
             adventurerIdleTextureRegion =
@@ -102,11 +92,8 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
             adventurerFallTexture.load()
             adventurerAttackTexture.load()
             adventurerDieTexture.load()
-            attackButtonTexture.load()
 
 
-            this.attackButtonTextureRegion =
-                TextureRegionFactory.extractFromTexture(attackButtonTexture)
         } catch (e: IOException) {
             Debug.e(e)
         }
@@ -124,7 +111,7 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
         )
     }
 
-    fun setRunAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
+    open fun setRunAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
         return AnimatedSprite(
             xPosition,
             yPosition,
@@ -135,7 +122,7 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
         )
     }
 
-    fun setAttackAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
+    open fun setAttackAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
         return AnimatedSprite(
             xPosition,
             yPosition,
@@ -145,6 +132,11 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
             engine!!.vertexBufferObjectManager
         )
     }
+
+    open fun setDieAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
+        TODO()
+    }
+
 
     fun zeroizeConditions(): MutableMap<String, MutableMap<String, Boolean>> {
         return mutableMapOf(

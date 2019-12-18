@@ -12,6 +12,7 @@ import org.andengine.entity.sprite.Sprite
 import org.andengine.input.touch.TouchEvent
 import org.andengine.ui.activity.SimpleBaseGameActivity
 import java.util.*
+import kotlin.math.abs
 import kotlin.math.pow
 
 
@@ -19,6 +20,8 @@ class MainActivity : SimpleBaseGameActivity() {
 
     private var attackButtonSprite: Sprite? = null
     private var backgroundSprite: SpriteBackground? = null
+    private var parallaxLayer: ParallaxLayer? = null
+    private var parallaxPosition: Float = 1F
     private var mCharacter: Character? = null
     private var mTextures: Textures? = null
     private var mCamera: Camera? = null
@@ -26,7 +29,6 @@ class MainActivity : SimpleBaseGameActivity() {
     private var controllerStickSprite: Sprite? = null
     private lateinit var defaultStickPos: ArrayList<Float>
 
-    val frameDuration = longArrayOf(125, 125, 125, 125)
     private var isTimerActive: Boolean = false
     private var timer: Timer? = null
     private var timerTask: TimerTask? = null
@@ -37,6 +39,9 @@ class MainActivity : SimpleBaseGameActivity() {
     companion object {
         private var CAMERA_WIDTH: Float = 0.0f
         private var CAMERA_HEIGHT = 0.0f
+
+        private var enemyDefaultPosX = 0F
+        private var enemyDefaultPosY = 0F
     }
 
 
@@ -66,7 +71,34 @@ class MainActivity : SimpleBaseGameActivity() {
 
         // Initialize start position
         characterPositionX = 300F
-        characterPositionY = CAMERA_HEIGHT - 270
+        characterPositionY = CAMERA_HEIGHT - 370F
+
+        enemyDefaultPosX = CAMERA_WIDTH - 93F * 4
+        enemyDefaultPosY = CAMERA_HEIGHT - 96F * 4
+
+        // Creating parallax effect for background
+        parallaxLayer = ParallaxLayer(mCamera!!, true, CAMERA_WIDTH.toInt())
+
+        scene.attachChild(parallaxLayer)
+
+        val treesSprite = Sprite(
+            0F,
+            0F,
+            CAMERA_WIDTH,
+            CAMERA_HEIGHT,
+            mTextures!!.mTreesTextureRegion,
+            vertexBufferObjectManager
+        )
+
+        parallaxLayer!!.attachParallaxEntity(
+            ParallaxLayer.ParallaxEntity(
+                15F,
+                treesSprite,
+                false,
+                1
+            )
+        )
+        parallaxLayer!!.setParallaxScrollFactor(10F)
 
         backgroundSprite = SpriteBackground(
             Sprite(
@@ -175,7 +207,7 @@ class MainActivity : SimpleBaseGameActivity() {
             CAMERA_WIDTH - 200F - controllerStickSprite!!.x,
             controllerStickSprite!!.y - 200F / 4,
             200F, 200F,
-            mCharacter!!.attackButtonTextureRegion,
+            mTextures!!.attackButtonTextureRegion,
             vertexBufferObjectManager
         ) {
             override fun onAreaTouched(
@@ -211,7 +243,6 @@ class MainActivity : SimpleBaseGameActivity() {
         scene.attachChild(controllerSprite)
         scene.attachChild(attackButtonSprite)
 
-
         // Register touch areas
         scene.registerTouchArea(controllerSprite)
         scene.registerTouchArea(attackButtonSprite)
@@ -225,6 +256,11 @@ class MainActivity : SimpleBaseGameActivity() {
 
     private fun startGlobalFrameTimer(scene: Scene) {
         if (!isTimerActive) {
+            // TODO if collusion with Character get and give damage
+            // TODO when 0 hp detach enemy by tag
+            // TODO if enemies more then 10, remove 1 of them
+            //
+            val enemiesList = mutableMapOf<Enemies, AnimatedSprite>()
             timer = Timer()
             timerTask = object : TimerTask() {
                 override fun run() {
@@ -240,7 +276,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                 characterPositionX,
                                 characterPositionY
                             )
-                            characterAnimation!!.animate(frameDuration)
+                            characterAnimation!!.animate(mCharacter!!.frameDuration)
                             scene.attachChild(characterAnimation)
 
                         } else if (mCharacter!!.characterConditions["run"]!!["active"]!!) {
@@ -260,7 +296,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                 )
 
                                 // Start running animation
-                                characterAnimation!!.animate(frameDuration)
+                                characterAnimation!!.animate(mCharacter!!.frameDuration)
                                 scene.attachChild(characterAnimation)
 
                             }
@@ -277,6 +313,9 @@ class MainActivity : SimpleBaseGameActivity() {
 
                                     // Increment characters position each tick
                                     characterPositionX += 15
+                                } else {
+                                    parallaxPosition = parallaxPosition.minus(1F)
+                                    parallaxLayer!!.setParallaxValue(parallaxPosition)
                                 }
 
                             }
@@ -292,17 +331,61 @@ class MainActivity : SimpleBaseGameActivity() {
                                     characterPositionX,
                                     characterPositionY
                                 )
-                                characterAnimation!!.animate(frameDuration)
+                                characterAnimation!!.animate(mCharacter!!.frameDuration)
                                 scene.attachChild(characterAnimation)
                                 mCharacter!!.characterConditions["attack"]!!["state"] = true
                             }
                         }
+                    }
+
+                    // Checking collision with enemies
+                    enemiesList.forEach {
+                        if (characterAnimation!!.collidesWith(it.value)) {
+
+                            // TODO if collides then character can't run and take some damage
+                            runOnUpdateThread {
+                                scene.detachChild(it.value)
+                            }
+                            enemiesList.remove(it.key)
+                        }
+                    }
+
+                    // Spawning enemies
+                    if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
+                        val enemy = Enemies(
+                            this@MainActivity,
+                            engine
+                        )
+
+                        if (enemiesList.size > 3) {
+                            runOnUpdateThread {
+                                scene.detachChild(enemiesList.values.first())
+                            }
+                            enemiesList.remove(enemiesList.keys.first())
+                        }
+                        val enemySprite = enemy.spawnEnemy(
+                            enemyDefaultPosX
+                            , enemyDefaultPosY
+                        )
+
+                        // Timer for changing position of the animation
+                        val enemyTimer = Timer()
+                        val enemyTimerTask = object : TimerTask() {
+                            override fun run() {
+
+                                enemySprite.x -= 10
+                            }
+                        }
+                        enemyTimer.scheduleAtFixedRate(enemyTimerTask, 0, 100)
+
+                        enemiesList[enemy] = enemySprite
+
+                        scene.attachChild(enemySprite)
                     }
                 }
             }
             timer!!.scheduleAtFixedRate(timerTask, 0, 100)
             isTimerActive = true
         }
-
     }
 }

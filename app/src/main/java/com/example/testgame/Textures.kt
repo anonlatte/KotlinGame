@@ -13,8 +13,10 @@ import java.io.IOException
 open class Textures(private var activity: BaseGameActivity, engine: Engine) {
 
     var mBackgroundTextureRegion: ITextureRegion? = null
+    var mTreesTextureRegion: ITextureRegion? = null
     var mControllerFrame: ITextureRegion? = null
     var mControllerStick: ITextureRegion? = null
+    var attackButtonTextureRegion: ITextureRegion? = null
 
     init {
 
@@ -23,6 +25,9 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
             val backgroundTexture: ITexture =
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("background.png") })
+            val treesTexture: ITexture =
+                BitmapTexture(engine.textureManager,
+                    IInputStreamOpener { activity.assets.open("background/parallax.png") })
             val controllerFrameTexture: ITexture =
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("VirtualJoystickPack/Joystick.png") })
@@ -30,13 +35,21 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("VirtualJoystickPack/SmallHandleFilled.png") })
 
+            val attackButtonTexture: ITexture =
+                BitmapTexture(engine.textureManager,
+                    IInputStreamOpener { activity.assets.open("itemPack/Item__07.png") })
+
             // Load bitmap textures into VRAM
             backgroundTexture.load()
+            treesTexture.load()
             controllerFrameTexture.load()
             controllerStickTexture.load()
+            attackButtonTexture.load()
 
             // Set up texture regions
             this.mBackgroundTextureRegion =
+                TextureRegionFactory.extractFromTexture(backgroundTexture)
+            this.mTreesTextureRegion =
                 TextureRegionFactory.extractFromTexture(backgroundTexture)
 
             // Joystick
@@ -44,6 +57,9 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
                 TextureRegionFactory.extractFromTexture(controllerFrameTexture)
             this.mControllerStick =
                 TextureRegionFactory.extractFromTexture(controllerStickTexture)
+
+            this.attackButtonTextureRegion =
+                TextureRegionFactory.extractFromTexture(attackButtonTexture)
 
         } catch (e: IOException) {
             Debug.e(e)
