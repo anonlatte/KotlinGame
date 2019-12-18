@@ -1,10 +1,12 @@
 package com.example.testgame
 
 import android.graphics.Point
+import android.util.Log
 import org.andengine.engine.camera.Camera
 import org.andengine.engine.options.EngineOptions
 import org.andengine.engine.options.ScreenOrientation
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy
+import org.andengine.entity.primitive.Rectangle
 import org.andengine.entity.scene.Scene
 import org.andengine.entity.scene.background.SpriteBackground
 import org.andengine.entity.sprite.AnimatedSprite
@@ -18,6 +20,8 @@ import kotlin.math.pow
 
 class MainActivity : SimpleBaseGameActivity() {
 
+    private var enemyTimer: Timer? = null
+    private var enemyTimerTask: TimerTask? = null
     private var attackButtonSprite: Sprite? = null
     private var backgroundSprite: SpriteBackground? = null
     private var parallaxLayer: ParallaxLayer? = null
@@ -35,6 +39,8 @@ class MainActivity : SimpleBaseGameActivity() {
     private var characterAnimation: AnimatedSprite? = null
     private var characterPositionX: Float = 0F
     private var characterPositionY: Float = 0F
+
+    private var healthBar: Rectangle? = null
 
     companion object {
         private var CAMERA_WIDTH: Float = 0.0f
@@ -169,7 +175,7 @@ class MainActivity : SimpleBaseGameActivity() {
                     }
                 } else {
 
-                    // Change the stick position
+                    // On cancel set stick to the default position
                     controllerStickSprite!!.setPosition(
                         defaultStickPos[0],
                         defaultStickPos[1]
@@ -247,6 +253,12 @@ class MainActivity : SimpleBaseGameActivity() {
         scene.registerTouchArea(controllerSprite)
         scene.registerTouchArea(attackButtonSprite)
 
+        // Drawing health bar
+        healthBar =
+            Rectangle(10F, 10F, CAMERA_WIDTH / 2, CAMERA_HEIGHT * .1F, vertexBufferObjectManager)
+        healthBar!!.setColor(0.6F, 0.2F, 0.2F)
+        scene.attachChild(healthBar)
+
         // Joystick motion
 
         // Start globalTimer
@@ -264,65 +276,136 @@ class MainActivity : SimpleBaseGameActivity() {
             timer = Timer()
             timerTask = object : TimerTask() {
                 override fun run() {
+
                     runOnUpdateThread {
 
-                        if (mCharacter!!.characterConditions["idle"]!!["active"]!! && mCharacter!!.characterConditions["idle"]!!["state"]!!) {
+                        if (mCharacter!!.healthPoints <= 0) {
+                            // Identify death state
 
-                            mCharacter!!.characterConditions["idle"]!!["state"] = false
-
-                            scene.detachChild(characterAnimation)
-
-                            characterAnimation = mCharacter!!.setIdleAnimation(
-                                characterPositionX,
-                                characterPositionY
-                            )
-                            characterAnimation!!.animate(mCharacter!!.frameDuration)
-                            scene.attachChild(characterAnimation)
-
-                        } else if (mCharacter!!.characterConditions["run"]!!["active"]!!) {
-
-                            // If animation of the running had not been run
-                            if (!mCharacter!!.characterConditions["run"]!!["state"]!!) {
-                                mCharacter!!.characterConditions["run"]!!["state"] = true
-
+                            if (mCharacter!!.characterConditions["die"]!!["state"] == false) {
+                                mCharacter!!.characterConditions["die"]!!["state"] = true
                                 // Clear previous animation
-                                scene.detachChild(characterAnimation)
+                                characterAnimation!!.stopAnimation()
 
-                                // Set new animation
-                                characterAnimation = mCharacter!!.setRunAnimation(
-                                    characterPositionX,
-                                    characterPositionY
+                                // If animation of the death is not running
+                                if (!characterAnimation!!.isAnimationRunning) {
 
-                                )
+                                    scene.detachChild(characterAnimation)
 
-                                // Start running animation
-                                characterAnimation!!.animate(mCharacter!!.frameDuration)
-                                scene.attachChild(characterAnimation)
-
-                            }
-
-
-                            if (scene.x <= 500) {
-
-                                // If middle of the screen hasn't been reached
-                                if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.mControllerFrame!!.width / 2) {
-                                    characterAnimation!!.setPosition(
+                                    // Set new animation
+                                    characterAnimation = mCharacter!!.setDieAnimation(
                                         characterPositionX,
                                         characterPositionY
                                     )
+                                    characterAnimation!!.animate(mCharacter!!.dieFrameDuration)
+                                    scene.attachChild(characterAnimation)
 
-                                    // Increment characters position each tick
-                                    characterPositionX += 15
-                                } else {
-                                    parallaxPosition = parallaxPosition.minus(1F)
-                                    parallaxLayer!!.setParallaxValue(parallaxPosition)
                                 }
-
                             }
 
-                            // On cancel set stick to the default position
+                            if (characterAnimation!!.currentTileIndex >= characterAnimation!!.tileCount - 1) {
+
+                                // TODO Show death screen
+                                isTimerActive = false
+                                scene.detachChild(characterAnimation)
+                                enemiesList.forEach {
+                                    scene.detachChild(it.value)
+                                    enemiesList.remove(it.key)
+                                }
+
+                                this.cancel()
+                                enemyTimerTask!!.cancel()
+                            }
+
+                            // Start running animation
+                        } else {
+                            if (mCharacter!!.characterConditions["idle"]!!["active"]!! && mCharacter!!.characterConditions["idle"]!!["state"]!!) {
+
+                                mCharacter!!.characterConditions["idle"]!!["state"] = false
+
+                                scene.detachChild(characterAnimation)
+
+                                characterAnimation = mCharacter!!.setIdleAnimation(
+                                    characterPositionX,
+                                    characterPositionY
+                                )
+                                characterAnimation!!.animate(mCharacter!!.idleFrameDuration)
+                                scene.attachChild(characterAnimation)
+
+                            } else if (mCharacter!!.characterConditions["run"]!!["active"]!!) {
+
+                                // If animation of the running had not been run
+                                if (!mCharacter!!.characterConditions["run"]!!["state"]!!) {
+                                    mCharacter!!.characterConditions["run"]!!["state"] = true
+
+                                    // Clear previous animation
+                                    scene.detachChild(characterAnimation)
+
+                                    // Set new animation
+                                    characterAnimation = mCharacter!!.setRunAnimation(
+                                        characterPositionX,
+                                        characterPositionY
+
+                                    )
+
+                                    // Start running animation
+                                    characterAnimation!!.animate(mCharacter!!.runFrameDuration)
+                                    scene.attachChild(characterAnimation)
+
+                                }
 
 
+                                if (scene.x <= 500) {
+
+                                    // If middle of the screen hasn't been reached
+                                    if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.mControllerFrame!!.width / 2) {
+                                        characterAnimation!!.setPosition(
+                                            characterPositionX,
+                                            characterPositionY
+                                        )
+
+                                        // Increment characters position each tick
+                                        characterPositionX += 15
+                                    } else {
+                                        parallaxPosition = parallaxPosition.minus(1F)
+                                        parallaxLayer!!.setParallaxValue(parallaxPosition)
+                                        if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
+                                            val enemy = Enemies(
+                                                this@MainActivity,
+                                                engine
+                                            )
+
+                                            // Remove enemies for saving a phone performance
+                                            if (enemiesList.size > 3) {
+                                                runOnUpdateThread {
+                                                    scene.detachChild(enemiesList.values.first())
+                                                }
+                                                enemiesList.remove(enemiesList.keys.first())
+                                            }
+                                            val enemySprite = enemy.spawnEnemy(
+                                                enemyDefaultPosX
+                                                , enemyDefaultPosY
+                                            )
+
+                                            // Timer for changing position of the animation
+                                            enemyTimer = Timer()
+                                            enemyTimerTask = object : TimerTask() {
+                                                override fun run() {
+
+                                                    enemySprite.x -= 10
+                                                }
+                                            }
+                                            enemyTimer!!.scheduleAtFixedRate(enemyTimerTask, 0, 100)
+
+                                            enemiesList[enemy] = enemySprite
+
+                                            scene.attachChild(enemySprite)
+                                        }
+
+                                    }
+
+                                }
+                            }
                         }
                         if (mCharacter!!.characterConditions["attack"]!!["active"]!!) {
                             if (!mCharacter!!.characterConditions["attack"]!!["state"]!!) {
@@ -331,7 +414,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                     characterPositionX,
                                     characterPositionY
                                 )
-                                characterAnimation!!.animate(mCharacter!!.frameDuration)
+                                characterAnimation!!.animate(mCharacter!!.attackFrameDuration)
                                 scene.attachChild(characterAnimation)
                                 mCharacter!!.characterConditions["attack"]!!["state"] = true
                             }
@@ -341,47 +424,34 @@ class MainActivity : SimpleBaseGameActivity() {
                     // Checking collision with enemies
                     enemiesList.forEach {
                         if (characterAnimation!!.collidesWith(it.value)) {
-
-                            // TODO if collides then character can't run and take some damage
-                            runOnUpdateThread {
-                                scene.detachChild(it.value)
+                            if (mCharacter!!.characterConditions["attack"]!!["state"] == true) {
+                                if (it.key.healthPoints <= 0) {
+                                    runOnUpdateThread {
+                                        scene.detachChild(it.value)
+                                    }
+                                    runOnUiThread {
+                                        if (it.value == enemiesList.getValue(it.key)) {
+                                            if (enemiesList.containsKey(it.key))
+                                                enemiesList.remove(it.key)
+                                        }
+                                    }
+                                } else {
+                                    it.value.green = 0.5F
+                                    it.value.blue = 0.5F
+                                    it.key.healthPoints -= 5
+                                    Log.v("Enemy health", "100/" + it.key.healthPoints.toString())
+                                }
                             }
-                            enemiesList.remove(it.key)
+                            // TODO display damage
+                            mCharacter!!.healthPoints -= 1F
+                            // full hp divide by screen width
+                            healthBar!!.width -= CAMERA_WIDTH * (100 / CAMERA_WIDTH / 10)
+                            Log.v("Health", mCharacter!!.healthPoints.toString())
+                            Log.v("Healthbar", healthBar!!.width.toString())
                         }
                     }
 
-                    // Spawning enemies
-                    if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
-                        val enemy = Enemies(
-                            this@MainActivity,
-                            engine
-                        )
-
-                        if (enemiesList.size > 3) {
-                            runOnUpdateThread {
-                                scene.detachChild(enemiesList.values.first())
-                            }
-                            enemiesList.remove(enemiesList.keys.first())
-                        }
-                        val enemySprite = enemy.spawnEnemy(
-                            enemyDefaultPosX
-                            , enemyDefaultPosY
-                        )
-
-                        // Timer for changing position of the animation
-                        val enemyTimer = Timer()
-                        val enemyTimerTask = object : TimerTask() {
-                            override fun run() {
-
-                                enemySprite.x -= 10
-                            }
-                        }
-                        enemyTimer.scheduleAtFixedRate(enemyTimerTask, 0, 100)
-
-                        enemiesList[enemy] = enemySprite
-
-                        scene.attachChild(enemySprite)
-                    }
+                    // Spawning enemies by checking modulo operation of a parallaxPosition and a random integer from 40 to 80
                 }
             }
             timer!!.scheduleAtFixedRate(timerTask, 0, 100)

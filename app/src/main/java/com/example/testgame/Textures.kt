@@ -17,6 +17,7 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
     var mControllerFrame: ITextureRegion? = null
     var mControllerStick: ITextureRegion? = null
     var attackButtonTextureRegion: ITextureRegion? = null
+    var coinTextureRegion: ITextureRegion? = null
 
     init {
 
@@ -39,12 +40,17 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("itemPack/Item__07.png") })
 
+            val coinTexture: ITexture =
+                BitmapTexture(engine.textureManager,
+                    IInputStreamOpener { activity.assets.open("itemPack/MonedaD.png") })
+
             // Load bitmap textures into VRAM
             backgroundTexture.load()
             treesTexture.load()
             controllerFrameTexture.load()
             controllerStickTexture.load()
             attackButtonTexture.load()
+            coinTexture.load()
 
             // Set up texture regions
             this.mBackgroundTextureRegion =
@@ -60,6 +66,9 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
 
             this.attackButtonTextureRegion =
                 TextureRegionFactory.extractFromTexture(attackButtonTexture)
+
+            this.coinTextureRegion =
+                TextureRegionFactory.extractFromTexture(coinTexture)
 
         } catch (e: IOException) {
             Debug.e(e)

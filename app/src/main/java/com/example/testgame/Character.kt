@@ -31,7 +31,10 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     )
     var healthPoints = 100F
     var manaPoints = 100F
-    val frameDuration = longArrayOf(125, 125, 125, 125)
+    val idleFrameDuration = longArrayOf(125, 125, 125, 125)
+    open val attackFrameDuration = longArrayOf(125, 125, 125, 125, 125)
+    open val runFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125)
+    open val dieFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125, 125)
 
     companion object {
         // Sizes of the character
@@ -134,7 +137,14 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     }
 
     open fun setDieAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
-        TODO()
+        return AnimatedSprite(
+            xPosition,
+            yPosition,
+            characterWidth,
+            characterHeight,
+            adventurerDieTextureRegion,
+            engine!!.vertexBufferObjectManager
+        )
     }
 
 

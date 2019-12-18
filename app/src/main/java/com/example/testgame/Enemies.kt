@@ -14,6 +14,9 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
     private var minotaurDieTextureRegion: ITiledTextureRegion? = null
     var characterPositionX = 0F
     var characterPositionY = 0F
+    override val attackFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125, 125, 125, 125)
+    override val runFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125, 125, 125)
+    override val dieFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125)
 
     init {
         this.mActivity = activity
@@ -51,7 +54,7 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
             enemyPositionX,
             enemyPositionY
         )
-        enemyAnimation.animate(frameDuration)
+        enemyAnimation.animate(runFrameDuration)
         return enemyAnimation
     }
 
