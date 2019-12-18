@@ -2,28 +2,38 @@ package com.example.testgame
 
 import org.andengine.engine.Engine
 import org.andengine.entity.sprite.AnimatedSprite
+import org.andengine.opengl.texture.ITexture
 import org.andengine.opengl.texture.TextureOptions
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
+import org.andengine.opengl.texture.bitmap.BitmapTexture
+import org.andengine.opengl.texture.region.ITextureRegion
 import org.andengine.opengl.texture.region.ITiledTextureRegion
+import org.andengine.opengl.texture.region.TextureRegionFactory
 import org.andengine.ui.activity.BaseGameActivity
+import org.andengine.util.adt.io.`in`.IInputStreamOpener
 import org.andengine.util.debug.Debug
 import java.io.IOException
 
 class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity, engine) {
 
-    var adventurerIdleTextureRegion: ITiledTextureRegion? = null
-    var adventurerRunTextureRegion: ITiledTextureRegion? = null
-    var adventurerJumpTextureRegion: ITiledTextureRegion? = null
-    var adventurerFallTextureRegion: ITiledTextureRegion? = null
-    var adventurerAttackTextureRegion: ITiledTextureRegion? = null
-    var adventurerDieTextureRegion: ITiledTextureRegion? = null
+    private var adventurerIdleTextureRegion: ITiledTextureRegion? = null
+    private var adventurerRunTextureRegion: ITiledTextureRegion? = null
+    private var adventurerJumpTextureRegion: ITiledTextureRegion? = null
+    private var adventurerFallTextureRegion: ITiledTextureRegion? = null
+    private var adventurerAttackTextureRegion: ITiledTextureRegion? = null
+    private var adventurerDieTextureRegion: ITiledTextureRegion? = null
+
+    var attackButtonTextureRegion: ITextureRegion? = null
+
+
     private var mActivity: BaseGameActivity? = null
     private var engine: Engine? = null
     var isAnimationChanged: Boolean = false
     var isActionGoing: Boolean = false
 
     companion object {
+        // Sizes of the character
         var characterWidth = 350F
         var characterHeight = 259F
     }
@@ -45,6 +55,10 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
                 BitmapTextureAtlas(engine.textureManager, 250, 37, TextureOptions.BILINEAR)
             val adventurerDieTexture =
                 BitmapTextureAtlas(engine.textureManager, 350, 37, TextureOptions.BILINEAR)
+
+            val attackButtonTexture: ITexture =
+                BitmapTexture(engine.textureManager,
+                    IInputStreamOpener { activity.assets.open("itemPack/Item__06.png") })
 
             // Setting up frames
             adventurerIdleTextureRegion =
@@ -71,6 +85,8 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
                 BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(
                     adventurerDieTexture, activity, "die.png", 0, 0, 7, 1
                 )
+//
+
             // Load bitmap textures into VRAM
             adventurerIdleTexture.load()
             adventurerRunTexture.load()
@@ -78,6 +94,11 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
             adventurerFallTexture.load()
             adventurerAttackTexture.load()
             adventurerDieTexture.load()
+            attackButtonTexture.load()
+
+
+            this.attackButtonTextureRegion =
+                TextureRegionFactory.extractFromTexture(attackButtonTexture)
         } catch (e: IOException) {
             Debug.e(e)
         }

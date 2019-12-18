@@ -10,7 +10,7 @@ import org.andengine.util.adt.io.`in`.IInputStreamOpener
 import org.andengine.util.debug.Debug
 import java.io.IOException
 
-open class Textures(var activity: BaseGameActivity, engine: Engine) {
+open class Textures(private var activity: BaseGameActivity, engine: Engine) {
 
     var mBackgroundTextureRegion: ITextureRegion? = null
     var mControllerFrame: ITextureRegion? = null
@@ -19,7 +19,7 @@ open class Textures(var activity: BaseGameActivity, engine: Engine) {
     init {
 
         try {
-            // 1 - Set up bitmap textures
+            // Set up bitmap textures
             val backgroundTexture: ITexture =
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("background.png") })
@@ -30,12 +30,12 @@ open class Textures(var activity: BaseGameActivity, engine: Engine) {
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("VirtualJoystickPack/SmallHandleFilled.png") })
 
-            // 2 - Load bitmap textures into VRAM
+            // Load bitmap textures into VRAM
             backgroundTexture.load()
             controllerFrameTexture.load()
             controllerStickTexture.load()
 
-            // 3 - Set up texture regions
+            // Set up texture regions
             this.mBackgroundTextureRegion =
                 TextureRegionFactory.extractFromTexture(backgroundTexture)
 
