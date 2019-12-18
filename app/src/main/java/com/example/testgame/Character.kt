@@ -15,7 +15,7 @@ import org.andengine.util.adt.io.`in`.IInputStreamOpener
 import org.andengine.util.debug.Debug
 import java.io.IOException
 
-class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity, engine) {
+open class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity, engine) {
 
     private var adventurerIdleTextureRegion: ITiledTextureRegion? = null
     private var adventurerRunTextureRegion: ITiledTextureRegion? = null
@@ -31,11 +31,11 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
     var isAnimationChanged: Boolean = false
     var isActionGoing: Boolean = false
 
-    var characterConditions = mapOf(
-        "idle" to mapOf("active" to false, "state" to false),
-        "run" to mapOf("active" to false, "state" to false),
-        "attack" to mapOf("active" to false, "state" to false),
-        "die" to mapOf("active" to false, "state" to false)
+    var characterConditions = mutableMapOf(
+        "idle" to mutableMapOf("active" to true, "state" to true),
+        "run" to mutableMapOf("active" to false, "state" to false),
+        "attack" to mutableMapOf("active" to false, "state" to false),
+        "die" to mutableMapOf("active" to false, "state" to false)
     )
     var healthPoints = 100F
     var manaPoints = 100F
@@ -143,6 +143,15 @@ class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity,
             characterHeight,
             adventurerAttackTextureRegion,
             engine!!.vertexBufferObjectManager
+        )
+    }
+
+    fun zeroizeConditions(): MutableMap<String, MutableMap<String, Boolean>> {
+        return mutableMapOf(
+            "idle" to mutableMapOf("active" to false, "state" to false),
+            "run" to mutableMapOf("active" to false, "state" to false),
+            "attack" to mutableMapOf("active" to false, "state" to false),
+            "die" to mutableMapOf("active" to false, "state" to false)
         )
     }
 }

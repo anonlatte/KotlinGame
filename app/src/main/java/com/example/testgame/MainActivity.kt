@@ -1,7 +1,6 @@
 package com.example.testgame
 
 import android.graphics.Point
-import android.util.Log
 import org.andengine.engine.camera.Camera
 import org.andengine.engine.options.EngineOptions
 import org.andengine.engine.options.ScreenOrientation
@@ -92,79 +91,70 @@ class MainActivity : SimpleBaseGameActivity() {
                 pTouchAreaLocalX: Float,
                 pTouchAreaLocalY: Float
             ): Boolean {
+                // Change stick position
                 if (pSceneTouchEvent!!.isActionMove) {
-                    if (pSceneTouchEvent.x <= 500) {
-                        mCharacter!!.isActionGoing = true
 
-                        val xPos = pSceneTouchEvent.x
-                        val yPos = pSceneTouchEvent.y
-                        // Stick position checking
-                        val displacement =
-                            (mTextures!!.mControllerFrame!!.width / 2 - xPos - mTextures!!.mControllerStick!!.width / 2).toDouble().pow(
-                                2.0
-                            ) +
-                                    (CAMERA_HEIGHT - mTextures!!.mControllerFrame!!.height / 2 - yPos).toDouble().pow(
-                                        2.0
-                                    )
-                        val baseRadius =
-                            (mTextures!!.mControllerFrame!!.width / 2 + mTextures!!.mControllerStick!!.width / 2).toDouble()
-                                .pow(2.0)
+                    val xPos = pSceneTouchEvent.x
+                    val yPos = pSceneTouchEvent.y
 
-                        // TODO change every second position of the character if action is going and if action is running
-                        if (!mCharacter!!.isAnimationChanged && mCharacter!!.isActionGoing) {
-                            mCharacter!!.isAnimationChanged = true
 
-                            // Clear previous animation
-                            scene.detachChild(characterAnimation)
+                    // Change idle condition
+                    mCharacter!!.characterConditions["idle"]!!["active"] = false
+                    mCharacter!!.characterConditions["idle"]!!["state"] = false
 
-                            // Set new animation
-                            characterAnimation = mCharacter!!.setRunAnimation(
-                                characterPositionX,
-                                characterPositionY
+                    // To run condition
+                    mCharacter!!.characterConditions["run"]!!["active"] = true
 
-                            )
+                    // TODO depends from direction of the stick change condition
 
-                            characterAnimation!!.animate(frameDuration)
-                            scene.attachChild(characterAnimation)
-                            // Start running animation
-                            startTimer()
-                        }
-
-                        // If it's inside the joystick frame
-                        // set touch position
-                        if (displacement <= baseRadius) {
-                            controllerStickSprite!!.setPosition(xPos, yPos)
-                        }
-                        // If outside the frame, set position near the frame to the same direction
-                        else {
-                            val ratio = baseRadius / displacement
-                            val constrainedX =
-                                defaultStickPos[0] + (xPos - defaultStickPos[0]) * ratio
-                            val constrainedY =
-                                defaultStickPos[1] + (yPos - defaultStickPos[1]) * ratio
-
-                            controllerStickSprite!!.setPosition(
-                                (constrainedX).toFloat(),
-                                (constrainedY).toFloat()
-                            )
-                        }
-                        return true
-                    } else {
-                        return false
+                    // Stick position checking
+                    val displacement =
+                        (mTextures!!.mControllerFrame!!.width / 2 - xPos - mTextures!!.mControllerStick!!.width / 2).toDouble().pow(
+                            2.0
+                        ) +
+                                (CAMERA_HEIGHT - mTextures!!.mControllerFrame!!.height / 2 - yPos).toDouble().pow(
+                                    2.0
+                                )
+                    val baseRadius =
+                        (mTextures!!.mControllerFrame!!.width / 2 + mTextures!!.mControllerStick!!.width / 2).toDouble()
+                            .pow(2.0)
+                    if (displacement <= baseRadius) {
+                        controllerStickSprite!!.setPosition(xPos, yPos)
                     }
-                }
-                // On cancel set stick to the default position
-                else {
-                    mCharacter!!.isActionGoing = false
-                    mCharacter!!.isAnimationChanged = false
+                    // If outside the frame, set position near the frame to the same direction
+
+                    else {
+                        val ratio = baseRadius / displacement
+                        val constrainedX =
+                            defaultStickPos[0] + (xPos - defaultStickPos[0]) * ratio
+                        val constrainedY =
+                            defaultStickPos[1] + (yPos - defaultStickPos[1]) * ratio
+
+                        controllerStickSprite!!.setPosition(
+                            (constrainedX).toFloat(),
+                            (constrainedY).toFloat()
+                        )
+                    }
+                } else {
 
                     // Change the stick position
-                    controllerStickSprite!!.setPosition(defaultStickPos[0], defaultStickPos[1])
+                    controllerStickSprite!!.setPosition(
+                        defaultStickPos[0],
+                        defaultStickPos[1]
+                    )
 
-                    // Stop animation
-                    stopTimer(scene)
+                    // Set idle condition
+                    mCharacter!!.characterConditions["idle"]!!["active"] = true
+                    mCharacter!!.characterConditions["idle"]!!["state"] = true
+
+                    mCharacter!!.characterConditions["run"]!!["active"] = false
+                    mCharacter!!.characterConditions["run"]!!["state"] = false
+
+
                     return false
                 }
+
+                return true
             }
         }
 
@@ -174,13 +164,12 @@ class MainActivity : SimpleBaseGameActivity() {
             CAMERA_HEIGHT - controllerSprite.height / 2 - mTextures!!.mControllerStick!!.height / 2
         )
 
-        controllerStickSprite =
-            Sprite(
-                defaultStickPos[0],
-                defaultStickPos[1],
-                mTextures!!.mControllerStick,
-                vertexBufferObjectManager
-            )
+        controllerStickSprite = Sprite(
+            defaultStickPos[0],
+            defaultStickPos[1],
+            mTextures!!.mControllerStick,
+            vertexBufferObjectManager
+        )
 
         attackButtonSprite = object : Sprite(
             CAMERA_WIDTH - 200F - controllerStickSprite!!.x,
@@ -194,36 +183,27 @@ class MainActivity : SimpleBaseGameActivity() {
                 pTouchAreaLocalX: Float,
                 pTouchAreaLocalY: Float
             ): Boolean {
-                if (pSceneTouchEvent!!.isActionDown) {
-                    scene.detachChild(characterAnimation)
-                    characterAnimation = mCharacter!!.setAttackAnimation(
-                        characterPositionX,
-                        characterPositionY
-                    )
-                    characterAnimation!!.animate(frameDuration)
-                    scene.attachChild(characterAnimation)
-                    Log.v("AreaTouch", "Spell is used")
-                } else if (!pSceneTouchEvent.isActionUp) {
-                    scene.detachChild(characterAnimation)
-                    characterAnimation = mCharacter!!.setIdleAnimation(
-                        characterPositionX,
-                        characterPositionY
-                    )
-                    characterAnimation!!.animate(frameDuration)
-                    scene.attachChild(characterAnimation)
+                return if (pSceneTouchEvent!!.isActionDown) {
+
+                    attackButtonSprite!!.red = 0F
+
+                    mCharacter!!.characterConditions = mCharacter!!.zeroizeConditions()
+                    mCharacter!!.characterConditions["attack"]!!["active"] = true
+                    true
+                } else {
+                    attackButtonSprite!!.red = 1F
+
+                    mCharacter!!.characterConditions["attack"]!!["active"] = false
+                    mCharacter!!.characterConditions["attack"]!!["state"] = false
+
+                    mCharacter!!.characterConditions["idle"]!!["active"] = true
+                    mCharacter!!.characterConditions["idle"]!!["state"] = true
+                    false
                 }
-                return true
             }
         }
 
         // Character attack animation
-
-        // Set default animation
-        characterAnimation = mCharacter!!.setIdleAnimation(
-            characterPositionX,
-            characterPositionY
-        )
-        characterAnimation!!.animate(frameDuration)
 
         scene.background = backgroundSprite
 
@@ -231,56 +211,98 @@ class MainActivity : SimpleBaseGameActivity() {
         scene.attachChild(controllerSprite)
         scene.attachChild(attackButtonSprite)
 
-        scene.attachChild(characterAnimation)
 
         // Register touch areas
         scene.registerTouchArea(controllerSprite)
         scene.registerTouchArea(attackButtonSprite)
 
         // Joystick motion
+
+        // Start globalTimer
+        startGlobalFrameTimer(scene)
         return scene
     }
 
-    private fun startTimer() {
+    private fun startGlobalFrameTimer(scene: Scene) {
         if (!isTimerActive) {
             timer = Timer()
             timerTask = object : TimerTask() {
                 override fun run() {
+                    runOnUpdateThread {
 
-                    // If middle of the screen hasn't been reached
-                    if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.mControllerFrame!!.width / 2) {
-                        characterAnimation!!.setPosition(characterPositionX, characterPositionY)
+                        if (mCharacter!!.characterConditions["idle"]!!["active"]!! && mCharacter!!.characterConditions["idle"]!!["state"]!!) {
 
-                        // Increment characters position each tick
-                        characterPositionX += 15
+                            mCharacter!!.characterConditions["idle"]!!["state"] = false
+
+                            scene.detachChild(characterAnimation)
+
+                            characterAnimation = mCharacter!!.setIdleAnimation(
+                                characterPositionX,
+                                characterPositionY
+                            )
+                            characterAnimation!!.animate(frameDuration)
+                            scene.attachChild(characterAnimation)
+
+                        } else if (mCharacter!!.characterConditions["run"]!!["active"]!!) {
+
+                            // If animation of the running had not been run
+                            if (!mCharacter!!.characterConditions["run"]!!["state"]!!) {
+                                mCharacter!!.characterConditions["run"]!!["state"] = true
+
+                                // Clear previous animation
+                                scene.detachChild(characterAnimation)
+
+                                // Set new animation
+                                characterAnimation = mCharacter!!.setRunAnimation(
+                                    characterPositionX,
+                                    characterPositionY
+
+                                )
+
+                                // Start running animation
+                                characterAnimation!!.animate(frameDuration)
+                                scene.attachChild(characterAnimation)
+
+                            }
+
+
+                            if (scene.x <= 500) {
+
+                                // If middle of the screen hasn't been reached
+                                if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.mControllerFrame!!.width / 2) {
+                                    characterAnimation!!.setPosition(
+                                        characterPositionX,
+                                        characterPositionY
+                                    )
+
+                                    // Increment characters position each tick
+                                    characterPositionX += 15
+                                }
+
+                            }
+
+                            // On cancel set stick to the default position
+
+
+                        }
+                        if (mCharacter!!.characterConditions["attack"]!!["active"]!!) {
+                            if (!mCharacter!!.characterConditions["attack"]!!["state"]!!) {
+                                scene.detachChild(characterAnimation)
+                                characterAnimation = mCharacter!!.setAttackAnimation(
+                                    characterPositionX,
+                                    characterPositionY
+                                )
+                                characterAnimation!!.animate(frameDuration)
+                                scene.attachChild(characterAnimation)
+                                mCharacter!!.characterConditions["attack"]!!["state"] = true
+                            }
+                        }
                     }
                 }
-
             }
             timer!!.scheduleAtFixedRate(timerTask, 0, 100)
             isTimerActive = true
         }
+
     }
-
-    private fun stopTimer(pScene: Scene?) {
-        if (isTimerActive) {
-            timer!!.cancel()
-            isTimerActive = false
-
-            // Clean run animation
-            pScene!!.detachChild(characterAnimation)
-
-
-            // Set default idle animation
-            characterAnimation = mCharacter!!.setIdleAnimation(
-                characterPositionX,
-                characterPositionY
-            )
-            characterAnimation!!.animate(frameDuration)
-            // Set idle animation
-            pScene.attachChild(characterAnimation)
-
-        }
-    }
-
 }
