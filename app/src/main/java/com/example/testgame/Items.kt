@@ -8,7 +8,7 @@ import org.andengine.opengl.texture.region.ITextureRegion
 import org.andengine.ui.activity.BaseGameActivity
 
 class Items(activity: BaseGameActivity, engine: Engine) : Character(activity, engine) {
-    var coinTextureRegion: ITextureRegion? = null
+    private var coinTextureRegion: ITextureRegion? = null
 
     init {
 

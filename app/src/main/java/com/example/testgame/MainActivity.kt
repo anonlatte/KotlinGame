@@ -1,17 +1,20 @@
 package com.example.testgame
 
+import android.graphics.Color
 import android.graphics.Point
-import android.util.Log
 import org.andengine.engine.camera.Camera
 import org.andengine.engine.options.EngineOptions
 import org.andengine.engine.options.ScreenOrientation
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy
-import org.andengine.entity.primitive.Rectangle
 import org.andengine.entity.scene.Scene
 import org.andengine.entity.scene.background.SpriteBackground
 import org.andengine.entity.sprite.AnimatedSprite
 import org.andengine.entity.sprite.Sprite
+import org.andengine.entity.text.Text
 import org.andengine.input.touch.TouchEvent
+import org.andengine.opengl.font.Font
+import org.andengine.opengl.font.FontFactory
+import org.andengine.opengl.texture.TextureOptions
 import org.andengine.ui.activity.SimpleBaseGameActivity
 import java.util.*
 import kotlin.math.abs
@@ -20,19 +23,24 @@ import kotlin.math.pow
 
 class MainActivity : SimpleBaseGameActivity() {
 
+
+    private var mCharacter: Character? = null
+    private var mFont: Font? = null
+    private var mTextures: Textures? = null
+    private var mItems: Items? = null
+    private var mCamera: Camera? = null
+
     private var enemyTimer: Timer? = null
     private var enemyTimerTask: TimerTask? = null
     private var attackButtonSprite: Sprite? = null
     private var backgroundSprite: SpriteBackground? = null
     private var parallaxLayer: ParallaxLayer? = null
     private var parallaxPosition: Float = 1F
-    private var mCharacter: Character? = null
-    private var mTextures: Textures? = null
-    private var mItems: Items? = null
-    private var mCamera: Camera? = null
 
     private var controllerStickSprite: Sprite? = null
     private lateinit var defaultStickPos: ArrayList<Float>
+    private var healthBarSprite: Sprite? = null
+    private var healthBarSpriteFilling: Sprite? = null
 
     private var isTimerActive: Boolean = false
     private var timer: Timer? = null
@@ -40,8 +48,7 @@ class MainActivity : SimpleBaseGameActivity() {
     private var characterAnimation: AnimatedSprite? = null
     private var characterPositionX: Float = 0F
     private var characterPositionY: Float = 0F
-
-    private var healthBar: Rectangle? = null
+    private var coinsCounter: Text? = null
 
     companion object {
         private var CAMERA_WIDTH: Float = 0.0f
@@ -70,6 +77,27 @@ class MainActivity : SimpleBaseGameActivity() {
     override fun onCreateResources() {
         mTextures = Textures(this, engine)
         mCharacter = Character(this, engine)
+        mFont = FontFactory.createFromAsset(
+            this.fontManager,
+            this.textureManager,
+            256,
+            128,
+            TextureOptions.BILINEAR,
+            this.assets,
+            "fonts/ARCADECLASSIC.TTF",
+            64F,
+            true,
+            Color.YELLOW
+        )
+        mFont!!.load()
+        coinsCounter = Text(
+            CAMERA_WIDTH - mFont!!.texture.width / 8 - mFont!!.texture.width / 2,
+            128F,
+            mFont,
+            "0",
+            10,
+            vertexBufferObjectManager
+        )
     }
 
     override fun onCreateScene(): Scene {
@@ -189,7 +217,6 @@ class MainActivity : SimpleBaseGameActivity() {
                     mCharacter!!.characterConditions["run"]!!["active"] = false
                     mCharacter!!.characterConditions["run"]!!["state"] = false
 
-
                     return false
                 }
 
@@ -255,12 +282,31 @@ class MainActivity : SimpleBaseGameActivity() {
         scene.registerTouchArea(attackButtonSprite)
 
         // Drawing health bar
-        healthBar =
-            Rectangle(10F, 10F, CAMERA_WIDTH / 2, CAMERA_HEIGHT * .1F, vertexBufferObjectManager)
-        healthBar!!.setColor(0.6F, 0.2F, 0.2F)
-        scene.attachChild(healthBar)
 
-        // Joystick motion
+        healthBarSprite = Sprite(
+            0F,
+            0F,
+            CAMERA_WIDTH / 4,
+            CAMERA_HEIGHT / 9,
+            mTextures!!.healthBarTextureRegion,
+            vertexBufferObjectManager
+        )
+
+        // Drawing rectangle inside the health bar
+        healthBarSpriteFilling = Sprite(
+            healthBarSprite!!.width / 4,
+            healthBarSprite!!.height / 2.5F,
+            CAMERA_WIDTH / 5.5F,
+            CAMERA_HEIGHT / 35,
+            mTextures!!.healthBarFillingTextureRegion,
+            vertexBufferObjectManager
+        )
+
+        scene.attachChild(healthBarSpriteFilling)
+        scene.attachChild(healthBarSprite)
+
+        // Set text
+        scene.attachChild(coinsCounter)
 
         // Start globalTimer
         startGlobalFrameTimer(scene)
@@ -269,10 +315,6 @@ class MainActivity : SimpleBaseGameActivity() {
 
     private fun startGlobalFrameTimer(scene: Scene) {
         if (!isTimerActive) {
-            // TODO if collusion with Character get and give damage
-            // TODO when 0 hp detach enemy by tag
-            // TODO if enemies more then 10, remove 1 of them
-            //
             val enemiesList = mutableMapOf<Enemies, AnimatedSprite>()
             val itemsList = mutableMapOf<Items, Sprite>()
             timer = Timer()
@@ -310,9 +352,12 @@ class MainActivity : SimpleBaseGameActivity() {
                                 // TODO Show death screen
                                 isTimerActive = false
                                 scene.detachChild(characterAnimation)
-                                enemiesList.forEach {
-                                    scene.detachChild(it.value)
-                                    enemiesList.remove(it.key)
+
+                                with(enemiesList.iterator()) {
+                                    forEach {
+                                        scene.detachChild(it.value)
+                                        remove()
+                                    }
                                 }
 
                                 this.cancel()
@@ -347,15 +392,12 @@ class MainActivity : SimpleBaseGameActivity() {
                                     characterAnimation = mCharacter!!.setRunAnimation(
                                         characterPositionX,
                                         characterPositionY
-
                                     )
 
                                     // Start running animation
                                     characterAnimation!!.animate(mCharacter!!.runFrameDuration)
                                     scene.attachChild(characterAnimation)
-
                                 }
-
 
                                 if (scene.x <= 500) {
 
@@ -424,51 +466,49 @@ class MainActivity : SimpleBaseGameActivity() {
                     }
 
                     // Checking collision with enemies
-                    enemiesList.forEach {
-                        if (characterAnimation!!.collidesWith(it.value)) {
-                            if (mCharacter!!.characterConditions["attack"]!!["state"] == true) {
-                                if (it.key.healthPoints <= 0) {
-                                    // Make heal
-                                    mCharacter!!.healthPoints += 10F
-                                    healthBar!!.width += CAMERA_WIDTH * (100 / CAMERA_WIDTH)
+                    with(enemiesList.iterator()) {
+                        forEach {
+                            if (characterAnimation!!.collidesWith(it.value)) {
+                                if (mCharacter!!.characterConditions["attack"]!!["state"] == true) {
+                                    if (it.key.healthPoints <= 0) {
+                                        // Make heal after kill
+                                        mCharacter!!.healthPoints += 20F
+                                        // barHP = (HP / maxHP) * barMaxHP.Width
+                                        healthBarSpriteFilling!!.width =
+                                            (mCharacter!!.healthPoints / 100) * (CAMERA_WIDTH / 5.5F)
 
-                                    // Drop a coin
-                                    val mItems = Items(this@MainActivity, engine)
-                                    val coinSprite = mItems.dropCoin(
-                                        CAMERA_WIDTH - 128F - itemsList.size * 64,
-                                        10F
-                                    )
-                                    itemsList[mItems] = coinSprite
-                                    scene.attachChild(coinSprite)
-
-                                    runOnUpdateThread {
-                                        scene.detachChild(it.value)
-                                    }
-                                    runOnUiThread {
-                                        if (enemiesList.containsKey(it.key)) {
-                                            if (it.value == enemiesList.getValue(it.key)) {
-                                                if (enemiesList.containsKey(it.key))
-                                                    enemiesList.remove(it.key)
-                                            }
+                                        runOnUpdateThread {
+                                            scene.detachChild(it.value)
                                         }
+
+                                        // Drop a coin
+                                        val mItems = Items(this@MainActivity, engine)
+                                        val coinSprite = mItems.dropCoin(
+                                            CAMERA_WIDTH - 128F - itemsList.size * 32,
+                                            10F
+                                        )
+                                        itemsList[mItems] = coinSprite
+                                        coinsCounter!!.text = itemsList.size.toString()
+                                        if (itemsList.size < 10) {
+                                            scene.attachChild(coinSprite)
+                                        }
+
+                                        remove()
+                                    } else {
+                                        it.value.green = 0.5F
+                                        it.value.blue = 0.5F
+                                        it.key.healthPoints -= 5
                                     }
-                                } else {
-                                    it.value.green = 0.5F
-                                    it.value.blue = 0.5F
-                                    it.key.healthPoints -= 5
-                                    Log.v("Enemy health", "100/" + it.key.healthPoints.toString())
                                 }
+                                // TODO display damage
+                                mCharacter!!.healthPoints -= 1F
+                                // Every tick event set width of barHP = (HP / maxHP) * barMaxHP.Width
+                                healthBarSpriteFilling!!.width =
+                                    (mCharacter!!.healthPoints / 100) * (CAMERA_WIDTH / 5.5F)
                             }
-                            // TODO display damage
-                            mCharacter!!.healthPoints -= 1F
-                            // full hp divide by screen width
-                            healthBar!!.width -= CAMERA_WIDTH * (100 / CAMERA_WIDTH / 10)
-                            Log.v("Health", mCharacter!!.healthPoints.toString())
-                            Log.v("Healthbar", healthBar!!.width.toString())
+
                         }
                     }
-
-                    // Spawning enemies by checking modulo operation of a parallaxPosition and a random integer from 40 to 80
                 }
             }
             timer!!.scheduleAtFixedRate(timerTask, 0, 100)

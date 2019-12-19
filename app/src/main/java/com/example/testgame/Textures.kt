@@ -7,6 +7,7 @@ import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
 import org.andengine.opengl.texture.bitmap.BitmapTexture
 import org.andengine.opengl.texture.region.ITextureRegion
+import org.andengine.opengl.texture.region.TextureRegion
 import org.andengine.opengl.texture.region.TextureRegionFactory
 import org.andengine.ui.activity.BaseGameActivity
 import org.andengine.util.adt.io.`in`.IInputStreamOpener
@@ -21,6 +22,8 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
     var controllerFrameTextureRegion: ITextureRegion? = null
     var controllerStickTextureRegion: ITextureRegion? = null
     var attackButtonTextureRegion: ITextureRegion? = null
+    var healthBarTextureRegion: TextureRegion? = null
+    var healthBarFillingTextureRegion: TextureRegion? = null
 
 
     init {
@@ -40,15 +43,23 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
             // Setting up frames
             controllerFrameTextureRegion =
                 BitmapTextureAtlasTextureRegionFactory.createFromAsset(
-                    hudTextureRegion, activity, "VirtualJoystickPack/Joystick.png", 0, 0
+                    hudTextureRegion, activity, "hud/Joystick.png", 0, 0
                 )
             controllerStickTextureRegion =
                 BitmapTextureAtlasTextureRegionFactory.createFromAsset(
-                    hudTextureRegion, activity, "VirtualJoystickPack/SmallHandleFilled.png", 0, 300
+                    hudTextureRegion, activity, "hud/SmallHandleFilled.png", 0, 300
                 )
             attackButtonTextureRegion =
                 BitmapTextureAtlasTextureRegionFactory.createFromAsset(
-                    hudTextureRegion, activity, "itemPack/Item__07.png", 100, 300
+                    hudTextureRegion, activity, "hud/Item__07.png", 100, 300
+                )
+            healthBarTextureRegion =
+                BitmapTextureAtlasTextureRegionFactory.createFromAsset(
+                    hudTextureRegion, activity, "hud/healthBar.png", 116, 300
+                )
+            healthBarFillingTextureRegion =
+                BitmapTextureAtlasTextureRegionFactory.createFromAsset(
+                    hudTextureRegion, activity, "hud/healthBarFilling.png", 192, 300
                 )
 
 
