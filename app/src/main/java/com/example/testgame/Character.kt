@@ -37,11 +37,9 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     open val runFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125)
     open val dieFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125, 125)
 
-    companion object {
-        // Sizes of the character
-        var characterWidth = 350F
-        var characterHeight = 259F
-    }
+    // Sizes of the character
+    var characterWidth = 0F
+    var characterHeight = 0F
 
     init {
         this.mActivity = activity
@@ -98,7 +96,26 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
         )
     }
 
-    open fun setRunAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
+    open fun setRunAnimation(
+        xPosition: Float,
+        yPosition: Float
+    ): AnimatedSprite {
+        return AnimatedSprite(
+            xPosition,
+            yPosition,
+            characterWidth,
+            characterHeight,
+            adventurerRunTextureRegion,
+            engine!!.vertexBufferObjectManager
+        )
+    }
+
+    open fun setRunAnimation(
+        xPosition: Float,
+        yPosition: Float,
+        fl: Float,
+        fl1: Float
+    ): AnimatedSprite {
         return AnimatedSprite(
             xPosition,
             yPosition,

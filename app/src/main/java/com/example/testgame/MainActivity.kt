@@ -23,6 +23,7 @@ import kotlin.math.pow
 
 class MainActivity : SimpleBaseGameActivity() {
 
+    private var aspectRatio: Float = 0F
 
     private var mCharacter: Character? = null
     private var mFont: Font? = null
@@ -54,8 +55,6 @@ class MainActivity : SimpleBaseGameActivity() {
         private var CAMERA_WIDTH: Float = 0.0f
         private var CAMERA_HEIGHT = 0.0f
 
-        private var enemyDefaultPosX = 0F
-        private var enemyDefaultPosY = 0F
     }
 
 
@@ -66,6 +65,7 @@ class MainActivity : SimpleBaseGameActivity() {
         deviceScreenInfo.getSize(displaySize)
         CAMERA_WIDTH = displaySize.x.toFloat()
         CAMERA_HEIGHT = displaySize.y.toFloat()
+        aspectRatio = CAMERA_WIDTH / CAMERA_HEIGHT
 
         this.mCamera = Camera(0F, 0F, CAMERA_WIDTH, CAMERA_HEIGHT)
         return EngineOptions(
@@ -77,6 +77,11 @@ class MainActivity : SimpleBaseGameActivity() {
     override fun onCreateResources() {
         mTextures = Textures(this, engine)
         mCharacter = Character(this, engine)
+        mCharacter!!.characterWidth = CAMERA_WIDTH / 50 * 6
+        mCharacter!!.characterHeight = CAMERA_HEIGHT / 37 * 6
+        characterPositionX = CAMERA_HEIGHT * 0.3F
+        characterPositionY = CAMERA_HEIGHT - mCharacter!!.characterHeight * 1.625F
+
         mFont = FontFactory.createFromAsset(
             this.fontManager,
             this.textureManager,
@@ -85,7 +90,7 @@ class MainActivity : SimpleBaseGameActivity() {
             TextureOptions.BILINEAR,
             this.assets,
             "fonts/ARCADECLASSIC.TTF",
-            64F,
+            aspectRatio * 32F,
             true,
             Color.YELLOW
         )
@@ -105,11 +110,6 @@ class MainActivity : SimpleBaseGameActivity() {
         val scene = Scene()
 
         // Initialize start position
-        characterPositionX = 300F
-        characterPositionY = CAMERA_HEIGHT - 370F
-
-        enemyDefaultPosX = CAMERA_WIDTH - 93F * 4
-        enemyDefaultPosY = CAMERA_HEIGHT - 96F * 4
 
         // Creating parallax effect for background
         parallaxLayer = ParallaxLayer(mCamera!!, true, CAMERA_WIDTH.toInt())
@@ -148,7 +148,9 @@ class MainActivity : SimpleBaseGameActivity() {
 
         val controllerSprite = object : Sprite(
             0F,
-            CAMERA_HEIGHT - mTextures!!.controllerFrameTextureRegion!!.height,
+            CAMERA_HEIGHT - CAMERA_HEIGHT * 0.3F,
+            CAMERA_HEIGHT * 0.3F,
+            CAMERA_HEIGHT * 0.3F,
             mTextures!!.controllerFrameTextureRegion,
             vertexBufferObjectManager
         ) {
@@ -225,22 +227,26 @@ class MainActivity : SimpleBaseGameActivity() {
         }
 
 
-        defaultStickPos = arrayListOf(
-            controllerSprite.width / 2 - mTextures!!.controllerStickTextureRegion!!.width / 2,
-            CAMERA_HEIGHT - controllerSprite.height / 2 - mTextures!!.controllerStickTextureRegion!!.height / 2
-        )
 
         controllerStickSprite = Sprite(
-            defaultStickPos[0],
-            defaultStickPos[1],
+            controllerSprite.width / 4,
+            CAMERA_HEIGHT - controllerSprite.height / 2 - controllerSprite.width * 0.5F / 2,
+            controllerSprite.width * 0.5F,
+            controllerSprite.height * 0.5F,
             mTextures!!.controllerStickTextureRegion,
             vertexBufferObjectManager
         )
 
+        defaultStickPos = arrayListOf(
+            controllerStickSprite!!.x
+            , controllerStickSprite!!.y
+        )
+
         attackButtonSprite = object : Sprite(
-            CAMERA_WIDTH - 200F - controllerStickSprite!!.x,
-            controllerStickSprite!!.y - 200F / 4,
-            200F, 200F,
+            CAMERA_WIDTH - CAMERA_HEIGHT / 16 * 4,
+            CAMERA_HEIGHT - CAMERA_HEIGHT / 16 * 4,
+            CAMERA_HEIGHT / 16 * 3,
+            CAMERA_HEIGHT / 16 * 3,
             mTextures!!.attackButtonTextureRegion,
             vertexBufferObjectManager
         ) {
@@ -407,12 +413,14 @@ class MainActivity : SimpleBaseGameActivity() {
                                             characterPositionX,
                                             characterPositionY
                                         )
-
+                                        // TODO increment position by screen resolution
                                         // Increment characters position each tick
                                         characterPositionX += 15
+
                                     } else {
                                         parallaxPosition = parallaxPosition.minus(1F)
                                         parallaxLayer!!.setParallaxValue(parallaxPosition)
+
                                         if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
                                             val enemy = Enemies(
                                                 this@MainActivity,
@@ -426,16 +434,14 @@ class MainActivity : SimpleBaseGameActivity() {
                                                 }
                                                 enemiesList.remove(enemiesList.keys.first())
                                             }
-                                            val enemySprite = enemy.spawnEnemy(
-                                                enemyDefaultPosX
-                                                , enemyDefaultPosY
-                                            )
+                                            val enemySprite =
+                                                enemy.spawnEnemy(CAMERA_WIDTH, CAMERA_HEIGHT)
 
                                             // Timer for changing position of the animation
                                             enemyTimer = Timer()
                                             enemyTimerTask = object : TimerTask() {
                                                 override fun run() {
-
+                                                    // TODO decrement position by screen resolution
                                                     enemySprite.x -= 10
                                                 }
                                             }
@@ -482,6 +488,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                         }
 
                                         // Drop a coin
+                                        // TODO set coin size by resolution
                                         val mItems = Items(this@MainActivity, engine)
                                         val coinSprite = mItems.dropCoin(
                                             CAMERA_WIDTH - 128F - itemsList.size * 32,
@@ -500,7 +507,6 @@ class MainActivity : SimpleBaseGameActivity() {
                                         it.key.healthPoints -= 5
                                     }
                                 }
-                                // TODO display damage
                                 mCharacter!!.healthPoints -= 1F
                                 // Every tick event set width of barHP = (HP / maxHP) * barMaxHP.Width
                                 healthBarSpriteFilling!!.width =

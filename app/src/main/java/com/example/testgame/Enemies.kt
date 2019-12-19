@@ -12,8 +12,6 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
     private var minotaurRunTextureRegion: ITiledTextureRegion? = null
     private var minotaurAttackTextureRegion: ITiledTextureRegion? = null
     private var minotaurDieTextureRegion: ITiledTextureRegion? = null
-    var characterPositionX = 0F
-    var characterPositionY = 0F
     override val attackFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125, 125, 125, 125)
     override val runFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125, 125, 125)
     override val dieFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125)
@@ -41,23 +39,37 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
         minotaurTexture.load()
     }
 
-    fun spawnEnemy(enemyPositionX: Float, enemyPositionY: Float): AnimatedSprite {
+    fun spawnEnemy(
+        screenWidth: Float,
+        screenHeight: Float
+    ): AnimatedSprite {
         val mEnemy = Enemies(this.mActivity!!, this.engine!!)
 
+        var enemyWidth = screenWidth / 96F * 14
+        var enemyHeight = screenHeight / 93F * 21
+        var enemyPositionX = screenWidth - enemyWidth
+        var enemyPositionY = screenHeight - enemyHeight * 1.125F
         val enemyAnimation = mEnemy.setRunAnimation(
             enemyPositionX,
-            enemyPositionY
+            enemyPositionY,
+            enemyWidth,
+            enemyHeight
         )
         enemyAnimation.animate(runFrameDuration)
         return enemyAnimation
     }
 
-    override fun setRunAnimation(xPosition: Float, yPosition: Float): AnimatedSprite {
+    override fun setRunAnimation(
+        xPosition: Float,
+        yPosition: Float,
+        fl: Float,
+        fl1: Float
+    ): AnimatedSprite {
         return AnimatedSprite(
             xPosition,
             yPosition,
-            characterWidth,
-            characterHeight,
+            fl,
+            fl1,
             minotaurRunTextureRegion,
             engine!!.vertexBufferObjectManager
         )
@@ -67,8 +79,8 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
         return AnimatedSprite(
             xPosition,
             yPosition,
-            characterWidth,
-            characterHeight,
+            enemyWidth,
+            enemyHeight,
             minotaurAttackTextureRegion,
             engine!!.vertexBufferObjectManager
         )
@@ -78,8 +90,8 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
         return AnimatedSprite(
             xPosition,
             yPosition,
-            characterWidth,
-            characterHeight,
+            enemyWidth,
+            enemyHeight,
             minotaurDieTextureRegion,
             engine!!.vertexBufferObjectManager
         )
@@ -87,7 +99,7 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
 
     companion object {
         // Sizes of the character
-        var characterWidth = 93F * 4
-        var characterHeight = 96F * 4
+        var enemyWidth = 93F
+        var enemyHeight = 96F
     }
 }
