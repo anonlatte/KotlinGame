@@ -2,6 +2,9 @@ package com.example.testgame
 
 import org.andengine.engine.Engine
 import org.andengine.opengl.texture.ITexture
+import org.andengine.opengl.texture.TextureOptions
+import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
+import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
 import org.andengine.opengl.texture.bitmap.BitmapTexture
 import org.andengine.opengl.texture.region.ITextureRegion
 import org.andengine.opengl.texture.region.TextureRegionFactory
@@ -14,9 +17,11 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
 
     var mBackgroundTextureRegion: ITextureRegion? = null
     var mTreesTextureRegion: ITextureRegion? = null
-    var mControllerFrame: ITextureRegion? = null
-    var mControllerStick: ITextureRegion? = null
+
+    var controllerFrameTextureRegion: ITextureRegion? = null
+    var controllerStickTextureRegion: ITextureRegion? = null
     var attackButtonTextureRegion: ITextureRegion? = null
+
 
     init {
 
@@ -28,24 +33,29 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
             val treesTexture: ITexture =
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("background/parallax.png") })
-            val controllerFrameTexture: ITexture =
-                BitmapTexture(engine.textureManager,
-                    IInputStreamOpener { activity.assets.open("VirtualJoystickPack/Joystick.png") })
-            val controllerStickTexture: ITexture =
-                BitmapTexture(engine.textureManager,
-                    IInputStreamOpener { activity.assets.open("VirtualJoystickPack/SmallHandleFilled.png") })
 
-            val attackButtonTexture: ITexture =
-                BitmapTexture(engine.textureManager,
-                    IInputStreamOpener { activity.assets.open("itemPack/Item__07.png") })
+            val hudTextureRegion =
+                BitmapTextureAtlas(engine.textureManager, 300, 400, TextureOptions.BILINEAR)
+
+            // Setting up frames
+            controllerFrameTextureRegion =
+                BitmapTextureAtlasTextureRegionFactory.createFromAsset(
+                    hudTextureRegion, activity, "VirtualJoystickPack/Joystick.png", 0, 0
+                )
+            controllerStickTextureRegion =
+                BitmapTextureAtlasTextureRegionFactory.createFromAsset(
+                    hudTextureRegion, activity, "VirtualJoystickPack/SmallHandleFilled.png", 0, 300
+                )
+            attackButtonTextureRegion =
+                BitmapTextureAtlasTextureRegionFactory.createFromAsset(
+                    hudTextureRegion, activity, "itemPack/Item__07.png", 100, 300
+                )
 
 
             // Load bitmap textures into VRAM
             backgroundTexture.load()
             treesTexture.load()
-            controllerFrameTexture.load()
-            controllerStickTexture.load()
-            attackButtonTexture.load()
+            hudTextureRegion.load()
 
             // Set up texture regions
             this.mBackgroundTextureRegion =
@@ -54,13 +64,6 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
                 TextureRegionFactory.extractFromTexture(backgroundTexture)
 
             // Joystick
-            this.mControllerFrame =
-                TextureRegionFactory.extractFromTexture(controllerFrameTexture)
-            this.mControllerStick =
-                TextureRegionFactory.extractFromTexture(controllerStickTexture)
-
-            this.attackButtonTextureRegion =
-                TextureRegionFactory.extractFromTexture(attackButtonTexture)
 
 
         } catch (e: IOException) {

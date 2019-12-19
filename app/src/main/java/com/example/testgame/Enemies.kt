@@ -22,29 +22,23 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
         this.mActivity = activity
         this.engine = engine
 
-        val minotaurRunTexture =
-            BitmapTextureAtlas(engine.textureManager, 744, 96, TextureOptions.BILINEAR)
-        val minotaurAttackTexture =
-            BitmapTextureAtlas(engine.textureManager, 837, 96, TextureOptions.BILINEAR)
-        val minotaurDieTexture =
-            BitmapTextureAtlas(engine.textureManager, 558, 96, TextureOptions.BILINEAR)
+        val minotaurTexture =
+            BitmapTextureAtlas(engine.textureManager, 837, 288, TextureOptions.BILINEAR)
 
         minotaurRunTextureRegion =
             BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(
-                minotaurRunTexture, activity, "minotaur/minotaur_run.png", 0, 0, 8, 1
+                minotaurTexture, activity, "minotaur/minotaur_run.png", 0, 0, 8, 1
             )
         minotaurAttackTextureRegion =
             BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(
-                minotaurAttackTexture, activity, "minotaur/minotaur_attack.png", 0, 0, 9, 1
+                minotaurTexture, activity, "minotaur/minotaur_attack.png", 0, 96, 9, 1
             )
         minotaurDieTextureRegion =
             BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(
-                minotaurDieTexture, activity, "minotaur/minotaur_die.png", 0, 0, 6, 1
+                minotaurTexture, activity, "minotaur/minotaur_die.png", 0, 192, 6, 1
             )
 
-        minotaurRunTexture.load()
-        minotaurAttackTexture.load()
-        minotaurDieTexture.load()
+        minotaurTexture.load()
     }
 
     fun spawnEnemy(enemyPositionX: Float, enemyPositionY: Float): AnimatedSprite {

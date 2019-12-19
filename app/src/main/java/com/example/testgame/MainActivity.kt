@@ -120,8 +120,8 @@ class MainActivity : SimpleBaseGameActivity() {
 
         val controllerSprite = object : Sprite(
             0F,
-            CAMERA_HEIGHT - mTextures!!.mControllerFrame!!.height,
-            mTextures!!.mControllerFrame,
+            CAMERA_HEIGHT - mTextures!!.controllerFrameTextureRegion!!.height,
+            mTextures!!.controllerFrameTextureRegion,
             vertexBufferObjectManager
         ) {
             // TODO separate this event to another method
@@ -148,14 +148,14 @@ class MainActivity : SimpleBaseGameActivity() {
 
                     // Stick position checking
                     val displacement =
-                        (mTextures!!.mControllerFrame!!.width / 2 - xPos - mTextures!!.mControllerStick!!.width / 2).toDouble().pow(
+                        (mTextures!!.controllerFrameTextureRegion!!.width / 2 - xPos - mTextures!!.controllerStickTextureRegion!!.width / 2).toDouble().pow(
                             2.0
                         ) +
-                                (CAMERA_HEIGHT - mTextures!!.mControllerFrame!!.height / 2 - yPos).toDouble().pow(
+                                (CAMERA_HEIGHT - mTextures!!.controllerFrameTextureRegion!!.height / 2 - yPos).toDouble().pow(
                                     2.0
                                 )
                     val baseRadius =
-                        (mTextures!!.mControllerFrame!!.width / 2 + mTextures!!.mControllerStick!!.width / 2).toDouble()
+                        (mTextures!!.controllerFrameTextureRegion!!.width / 2 + mTextures!!.controllerStickTextureRegion!!.width / 2).toDouble()
                             .pow(2.0)
                     if (displacement <= baseRadius) {
                         controllerStickSprite!!.setPosition(xPos, yPos)
@@ -199,14 +199,14 @@ class MainActivity : SimpleBaseGameActivity() {
 
 
         defaultStickPos = arrayListOf(
-            controllerSprite.width / 2 - mTextures!!.mControllerStick!!.width / 2,
-            CAMERA_HEIGHT - controllerSprite.height / 2 - mTextures!!.mControllerStick!!.height / 2
+            controllerSprite.width / 2 - mTextures!!.controllerStickTextureRegion!!.width / 2,
+            CAMERA_HEIGHT - controllerSprite.height / 2 - mTextures!!.controllerStickTextureRegion!!.height / 2
         )
 
         controllerStickSprite = Sprite(
             defaultStickPos[0],
             defaultStickPos[1],
-            mTextures!!.mControllerStick,
+            mTextures!!.controllerStickTextureRegion,
             vertexBufferObjectManager
         )
 
@@ -274,7 +274,7 @@ class MainActivity : SimpleBaseGameActivity() {
             // TODO if enemies more then 10, remove 1 of them
             //
             val enemiesList = mutableMapOf<Enemies, AnimatedSprite>()
-            val itemsList = mutableMapOf<Items, AnimatedSprite>()
+            val itemsList = mutableMapOf<Items, Sprite>()
             timer = Timer()
             timerTask = object : TimerTask() {
                 override fun run() {
@@ -360,7 +360,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                 if (scene.x <= 500) {
 
                                     // If middle of the screen hasn't been reached
-                                    if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.mControllerFrame!!.width / 2) {
+                                    if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.controllerFrameTextureRegion!!.width / 2) {
                                         characterAnimation!!.setPosition(
                                             characterPositionX,
                                             characterPositionY
@@ -429,8 +429,8 @@ class MainActivity : SimpleBaseGameActivity() {
                             if (mCharacter!!.characterConditions["attack"]!!["state"] == true) {
                                 if (it.key.healthPoints <= 0) {
                                     // Make heal
-                                    mCharacter!!.healthPoints += 5F
-                                    healthBar!!.width += CAMERA_WIDTH * (50 / CAMERA_WIDTH)
+                                    mCharacter!!.healthPoints += 10F
+                                    healthBar!!.width += CAMERA_WIDTH * (100 / CAMERA_WIDTH)
 
                                     // Drop a coin
                                     val mItems = Items(this@MainActivity, engine)
