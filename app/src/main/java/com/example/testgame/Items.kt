@@ -23,12 +23,17 @@ class Items(activity: BaseGameActivity, engine: Engine) : Character(activity, en
 
     }
 
-    fun dropCoin(positionX: Float, positionY: Float): Sprite {
+    fun dropCoin(screenWidth: Float, screenHeight: Float): Sprite {
+
+        val itemWidth = screenWidth * 0.05F
+        val itemHeight = screenWidth * 0.05F
+        val itemPositionX = screenWidth - itemWidth
+        val itemPositionY = 10F
         return Sprite(
-            positionX,
-            positionY,
-            128f,
-            128f,
+            itemPositionX,
+            itemPositionY,
+            itemWidth,
+            itemHeight,
             coinTextureRegion,
             engine!!.vertexBufferObjectManager
         )

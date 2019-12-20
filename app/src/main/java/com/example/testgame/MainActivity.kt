@@ -23,12 +23,13 @@ import kotlin.math.pow
 
 class MainActivity : SimpleBaseGameActivity() {
 
+    private var controllerSprite: Sprite? = null
     private var aspectRatio: Float = 0F
 
     private var mCharacter: Character? = null
     private var mFont: Font? = null
     private var mTextures: Textures? = null
-    private var mItems: Items? = null
+    //    private var mItems: Items? = null
     private var mCamera: Camera? = null
 
     private var enemyTimer: Timer? = null
@@ -36,7 +37,7 @@ class MainActivity : SimpleBaseGameActivity() {
     private var attackButtonSprite: Sprite? = null
     private var backgroundSprite: SpriteBackground? = null
     private var parallaxLayer: ParallaxLayer? = null
-    private var parallaxPosition: Float = 1F
+    private var parallaxPosition: Float = -1F
 
     private var controllerStickSprite: Sprite? = null
     private lateinit var defaultStickPos: ArrayList<Float>
@@ -90,14 +91,14 @@ class MainActivity : SimpleBaseGameActivity() {
             TextureOptions.BILINEAR,
             this.assets,
             "fonts/ARCADECLASSIC.TTF",
-            aspectRatio * 32F,
+            CAMERA_WIDTH * 0.05F,
             true,
             Color.YELLOW
         )
         mFont!!.load()
         coinsCounter = Text(
-            CAMERA_WIDTH - mFont!!.texture.width / 8 - mFont!!.texture.width / 2,
-            128F,
+            CAMERA_WIDTH - CAMERA_WIDTH * 0.05F,//CAMERA_WIDTH - mFont!!.texture.width / 8 - mFont!!.texture.width / 10,
+            CAMERA_HEIGHT * 0.1F,//mFont!!.texture.height.toFloat()/2,
             mFont,
             "0",
             10,
@@ -146,7 +147,7 @@ class MainActivity : SimpleBaseGameActivity() {
             )
         )
 
-        val controllerSprite = object : Sprite(
+        controllerSprite = object : Sprite(
             0F,
             CAMERA_HEIGHT - CAMERA_HEIGHT * 0.3F,
             CAMERA_HEIGHT * 0.3F,
@@ -229,10 +230,10 @@ class MainActivity : SimpleBaseGameActivity() {
 
 
         controllerStickSprite = Sprite(
-            controllerSprite.width / 4,
-            CAMERA_HEIGHT - controllerSprite.height / 2 - controllerSprite.width * 0.5F / 2,
-            controllerSprite.width * 0.5F,
-            controllerSprite.height * 0.5F,
+            controllerSprite!!.width / 4,
+            CAMERA_HEIGHT - controllerSprite!!.height / 2 - controllerSprite!!.width * 0.5F / 2,
+            controllerSprite!!.width * 0.5F,
+            controllerSprite!!.height * 0.5F,
             mTextures!!.controllerStickTextureRegion,
             vertexBufferObjectManager
         )
@@ -408,17 +409,17 @@ class MainActivity : SimpleBaseGameActivity() {
                                 if (scene.x <= 500) {
 
                                     // If middle of the screen hasn't been reached
-                                    if (characterPositionX < CAMERA_WIDTH / 2 - mTextures!!.controllerFrameTextureRegion!!.width / 2) {
+                                    if (characterPositionX < CAMERA_WIDTH / 2 - controllerSprite!!.width / 2) {
                                         characterAnimation!!.setPosition(
                                             characterPositionX,
                                             characterPositionY
                                         )
-                                        // TODO increment position by screen resolution
                                         // Increment characters position each tick
-                                        characterPositionX += 15
+                                        characterPositionX += characterAnimation!!.width * 0.05F
 
                                     } else {
-                                        parallaxPosition = parallaxPosition.minus(1F)
+                                        parallaxPosition =
+                                            parallaxPosition.minus(CAMERA_WIDTH * 0.0005F)
                                         parallaxLayer!!.setParallaxValue(parallaxPosition)
 
                                         if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
@@ -441,8 +442,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                             enemyTimer = Timer()
                                             enemyTimerTask = object : TimerTask() {
                                                 override fun run() {
-                                                    // TODO decrement position by screen resolution
-                                                    enemySprite.x -= 10
+                                                    enemySprite.x -= enemySprite.width * 0.04F
                                                 }
                                             }
                                             enemyTimer!!.scheduleAtFixedRate(enemyTimerTask, 0, 100)
@@ -488,11 +488,9 @@ class MainActivity : SimpleBaseGameActivity() {
                                         }
 
                                         // Drop a coin
-                                        // TODO set coin size by resolution
                                         val mItems = Items(this@MainActivity, engine)
                                         val coinSprite = mItems.dropCoin(
-                                            CAMERA_WIDTH - 128F - itemsList.size * 32,
-                                            10F
+                                            CAMERA_WIDTH, CAMERA_HEIGHT
                                         )
                                         itemsList[mItems] = coinSprite
                                         coinsCounter!!.text = itemsList.size.toString()

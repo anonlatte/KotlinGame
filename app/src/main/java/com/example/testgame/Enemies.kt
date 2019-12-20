@@ -45,10 +45,10 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
     ): AnimatedSprite {
         val mEnemy = Enemies(this.mActivity!!, this.engine!!)
 
-        var enemyWidth = screenWidth / 96F * 14
-        var enemyHeight = screenHeight / 93F * 21
-        var enemyPositionX = screenWidth - enemyWidth
-        var enemyPositionY = screenHeight - enemyHeight * 1.125F
+        val enemyWidth = screenWidth / 96F * 14
+        val enemyHeight = screenHeight / 93F * 21
+        val enemyPositionX = screenWidth - enemyWidth
+        val enemyPositionY = screenHeight - enemyHeight * 1.125F
         val enemyAnimation = mEnemy.setRunAnimation(
             enemyPositionX,
             enemyPositionY,
@@ -62,14 +62,14 @@ class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, 
     override fun setRunAnimation(
         xPosition: Float,
         yPosition: Float,
-        fl: Float,
-        fl1: Float
+        spriteWidth: Float,
+        spriteHeight: Float
     ): AnimatedSprite {
         return AnimatedSprite(
             xPosition,
             yPosition,
-            fl,
-            fl1,
+            spriteWidth,
+            spriteHeight,
             minotaurRunTextureRegion,
             engine!!.vertexBufferObjectManager
         )

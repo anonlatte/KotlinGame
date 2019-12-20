@@ -31,7 +31,7 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
         "die" to mutableMapOf("active" to false, "state" to false)
     )
     var healthPoints = 100F
-    var manaPoints = 100F
+    //    var manaPoints = 100F
     val idleFrameDuration = longArrayOf(125, 125, 125, 125)
     open val attackFrameDuration = longArrayOf(125, 125, 125, 125, 125)
     open val runFrameDuration = longArrayOf(125, 125, 125, 125, 125, 125)
@@ -113,8 +113,8 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     open fun setRunAnimation(
         xPosition: Float,
         yPosition: Float,
-        fl: Float,
-        fl1: Float
+        spriteWidth: Float,
+        spriteHeight: Float
     ): AnimatedSprite {
         return AnimatedSprite(
             xPosition,
