@@ -6,9 +6,9 @@ import org.andengine.opengl.texture.TextureOptions
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
 import org.andengine.opengl.texture.region.ITiledTextureRegion
-import org.andengine.ui.activity.BaseGameActivity
+import org.andengine.ui.activity.SimpleBaseGameActivity
 
-class Enemies(activity: BaseGameActivity, engine: Engine) : Character(activity, engine) {
+class Enemies(activity: SimpleBaseGameActivity, engine: Engine) : Character(activity, engine) {
     private var minotaurRunTextureRegion: ITiledTextureRegion? = null
     private var minotaurAttackTextureRegion: ITiledTextureRegion? = null
     private var minotaurDieTextureRegion: ITiledTextureRegion? = null

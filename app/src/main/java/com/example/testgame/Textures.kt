@@ -9,12 +9,12 @@ import org.andengine.opengl.texture.bitmap.BitmapTexture
 import org.andengine.opengl.texture.region.ITextureRegion
 import org.andengine.opengl.texture.region.TextureRegion
 import org.andengine.opengl.texture.region.TextureRegionFactory
-import org.andengine.ui.activity.BaseGameActivity
+import org.andengine.ui.activity.SimpleBaseGameActivity
 import org.andengine.util.adt.io.`in`.IInputStreamOpener
 import org.andengine.util.debug.Debug
 import java.io.IOException
 
-open class Textures(private var activity: BaseGameActivity, engine: Engine) {
+open class Textures(private var activity: SimpleBaseGameActivity, engine: Engine) {
 
     var mBackgroundTextureRegion: ITextureRegion? = null
     var mTreesTextureRegion: ITextureRegion? = null
@@ -32,7 +32,7 @@ open class Textures(private var activity: BaseGameActivity, engine: Engine) {
             // Set up bitmap textures
             val backgroundTexture: ITexture =
                 BitmapTexture(engine.textureManager,
-                    IInputStreamOpener { activity.assets.open("background.png") })
+                    IInputStreamOpener { activity.assets.open("background/background.png") })
             val treesTexture: ITexture =
                 BitmapTexture(engine.textureManager,
                     IInputStreamOpener { activity.assets.open("background/parallax.png") })

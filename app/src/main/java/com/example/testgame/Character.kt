@@ -6,13 +6,15 @@ import org.andengine.opengl.texture.TextureOptions
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
 import org.andengine.opengl.texture.region.ITiledTextureRegion
-import org.andengine.ui.activity.BaseGameActivity
+import org.andengine.ui.activity.SimpleBaseGameActivity
 import org.andengine.util.debug.Debug
 import java.io.IOException
 
 
-open class Character(activity: BaseGameActivity, engine: Engine) : Textures(activity, engine) {
+open class Character(activity: SimpleBaseGameActivity, engine: Engine) :
+    Textures(activity, engine) {
 
+    var spriteDirection: Boolean = true
     private var adventurerIdleTextureRegion: ITiledTextureRegion? = null
     private var adventurerRunTextureRegion: ITiledTextureRegion? = null
     private var adventurerJumpTextureRegion: ITiledTextureRegion? = null
@@ -21,15 +23,15 @@ open class Character(activity: BaseGameActivity, engine: Engine) : Textures(acti
     private var adventurerDieTextureRegion: ITiledTextureRegion? = null
 
 
-    protected var mActivity: BaseGameActivity? = null
+    protected var mActivity: SimpleBaseGameActivity? = null
     protected var engine: Engine? = null
 
     var characterConditions = mutableMapOf(
-        "idle" to mutableMapOf("active" to true, "state" to true),
         "run" to mutableMapOf("active" to false, "state" to false),
         "attack" to mutableMapOf("active" to false, "state" to false),
         "die" to mutableMapOf("active" to false, "state" to false)
     )
+    var hasCondition = false
     var healthPoints = 100F
     //    var manaPoints = 100F
     val idleFrameDuration = longArrayOf(125, 125, 125, 125)

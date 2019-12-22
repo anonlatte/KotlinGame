@@ -5,9 +5,9 @@ import org.andengine.entity.sprite.Sprite
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory
 import org.andengine.opengl.texture.region.ITextureRegion
-import org.andengine.ui.activity.BaseGameActivity
+import org.andengine.ui.activity.SimpleBaseGameActivity
 
-class Items(activity: BaseGameActivity, engine: Engine) : Character(activity, engine) {
+class Items(activity: SimpleBaseGameActivity, engine: Engine) : Character(activity, engine) {
     private var coinTextureRegion: ITextureRegion? = null
 
     init {

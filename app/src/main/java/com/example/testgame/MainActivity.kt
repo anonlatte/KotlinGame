@@ -2,15 +2,20 @@ package com.example.testgame
 
 import android.graphics.Color
 import android.graphics.Point
-import org.andengine.engine.camera.Camera
+import android.util.Log
+import org.andengine.engine.Engine
+import org.andengine.engine.LimitedFPSEngine
+import org.andengine.engine.camera.SmoothCamera
+import org.andengine.engine.camera.hud.HUD
 import org.andengine.engine.options.EngineOptions
 import org.andengine.engine.options.ScreenOrientation
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy
 import org.andengine.entity.scene.Scene
-import org.andengine.entity.scene.background.SpriteBackground
+import org.andengine.entity.scene.background.ParallaxBackground
 import org.andengine.entity.sprite.AnimatedSprite
 import org.andengine.entity.sprite.Sprite
 import org.andengine.entity.text.Text
+import org.andengine.entity.util.FPSLogger
 import org.andengine.input.touch.TouchEvent
 import org.andengine.opengl.font.Font
 import org.andengine.opengl.font.FontFactory
@@ -23,34 +28,37 @@ import kotlin.math.pow
 
 class MainActivity : SimpleBaseGameActivity() {
 
-    private var controllerSprite: Sprite? = null
-    private var aspectRatio: Float = 0F
-
     private var mCharacter: Character? = null
     private var mFont: Font? = null
     private var mTextures: Textures? = null
-    //    private var mItems: Items? = null
-    private var mCamera: Camera? = null
-
-    private var enemyTimer: Timer? = null
-    private var enemyTimerTask: TimerTask? = null
-    private var attackButtonSprite: Sprite? = null
-    private var backgroundSprite: SpriteBackground? = null
-    private var parallaxLayer: ParallaxLayer? = null
-    private var parallaxPosition: Float = -1F
-
-    private var controllerStickSprite: Sprite? = null
-    private lateinit var defaultStickPos: ArrayList<Float>
-    private var healthBarSprite: Sprite? = null
-    private var healthBarSpriteFilling: Sprite? = null
+    private var mCamera: SmoothCamera? = null
 
     private var isTimerActive: Boolean = false
     private var timer: Timer? = null
     private var timerTask: TimerTask? = null
+
+    private var fpsText: Text? = null
+    private var hudLayer: HUD? = null
+    private var controllerSprite: Sprite? = null
+    private var controllerStickSprite: Sprite? = null
+    private lateinit var defaultStickPos: ArrayList<Float>
+    private var healthBarSprite: Sprite? = null
+    private var healthBarSpriteFilling: Sprite? = null
+    private var attackButtonSprite: Sprite? = null
+    private var coinsCounter: Text? = null
+
+    private var aspectRatio: Float = 0F
+
+    private var backgroundSprite: Sprite? = null
+    private var parallaxBackground: ParallaxBackground? = null
+    private var parallaxPosition: Float = -1F
+
     private var characterAnimation: AnimatedSprite? = null
     private var characterPositionX: Float = 0F
     private var characterPositionY: Float = 0F
-    private var coinsCounter: Text? = null
+
+    private var enemyTimer: Timer? = null
+    private var enemyTimerTask: TimerTask? = null
 
     companion object {
         private var CAMERA_WIDTH: Float = 0.0f
@@ -58,6 +66,9 @@ class MainActivity : SimpleBaseGameActivity() {
 
     }
 
+    override fun onCreateEngine(pEngineOptions: EngineOptions?): Engine {
+        return LimitedFPSEngine(pEngineOptions, 60)
+    }
 
     override fun onCreateEngineOptions(): EngineOptions {
 
@@ -68,7 +79,7 @@ class MainActivity : SimpleBaseGameActivity() {
         CAMERA_HEIGHT = displaySize.y.toFloat()
         aspectRatio = CAMERA_WIDTH / CAMERA_HEIGHT
 
-        this.mCamera = Camera(0F, 0F, CAMERA_WIDTH, CAMERA_HEIGHT)
+        this.mCamera = SmoothCamera(0F, 0F, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_WIDTH, 150F, 1.3F)
         return EngineOptions(
             true, ScreenOrientation.LANDSCAPE_FIXED,
             RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), mCamera
@@ -82,12 +93,11 @@ class MainActivity : SimpleBaseGameActivity() {
         mCharacter!!.characterHeight = CAMERA_HEIGHT / 37 * 6
         characterPositionX = CAMERA_HEIGHT * 0.3F
         characterPositionY = CAMERA_HEIGHT - mCharacter!!.characterHeight * 1.625F
-
         mFont = FontFactory.createFromAsset(
             this.fontManager,
             this.textureManager,
-            256,
-            128,
+            (CAMERA_WIDTH * 0.7).toInt(),
+            (CAMERA_HEIGHT * 0.9).toInt(),
             TextureOptions.BILINEAR,
             this.assets,
             "fonts/ARCADECLASSIC.TTF",
@@ -95,13 +105,37 @@ class MainActivity : SimpleBaseGameActivity() {
             true,
             Color.YELLOW
         )
+
         mFont!!.load()
+
+        hudLayer = HUD()
+        fpsText = Text(
+            0F,
+            0F,
+            this.mFont,
+            "Fps: ?",
+            "Fps: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX".length,
+            vertexBufferObjectManager
+        )
+
+
+        //Attach the FPSLogger
+        engine.registerUpdateHandler(object : FPSLogger(0.5f) {
+            override fun onLogFPS() {
+                val fpsString = String.format(
+                    "FPS: %.2f",
+                    this.mFrames / this.mSecondsElapsed
+                )
+                fpsText!!.text = fpsString
+            }
+        })
+
         coinsCounter = Text(
-            CAMERA_WIDTH - CAMERA_WIDTH * 0.05F,//CAMERA_WIDTH - mFont!!.texture.width / 8 - mFont!!.texture.width / 10,
-            CAMERA_HEIGHT * 0.1F,//mFont!!.texture.height.toFloat()/2,
+            CAMERA_WIDTH - CAMERA_WIDTH * 0.15F,
+            CAMERA_HEIGHT * 0.1F,
             mFont,
             "0",
-            10,
+            "xxxxxxxxxx".length,
             vertexBufferObjectManager
         )
     }
@@ -110,12 +144,8 @@ class MainActivity : SimpleBaseGameActivity() {
         // 1 - Create new scene
         val scene = Scene()
 
-        // Initialize start position
-
         // Creating parallax effect for background
-        parallaxLayer = ParallaxLayer(mCamera!!, true, CAMERA_WIDTH.toInt())
-
-        scene.attachChild(parallaxLayer)
+        parallaxBackground = ParallaxBackground(0F, 0F, 0F)
 
         val treesSprite = Sprite(
             0F,
@@ -126,26 +156,29 @@ class MainActivity : SimpleBaseGameActivity() {
             vertexBufferObjectManager
         )
 
-        parallaxLayer!!.attachParallaxEntity(
-            ParallaxLayer.ParallaxEntity(
-                15F,
-                treesSprite,
-                false,
-                1
-            )
+        backgroundSprite = Sprite(
+            0F,
+            0F,
+            CAMERA_WIDTH,
+            CAMERA_HEIGHT,
+            mTextures!!.mBackgroundTextureRegion,
+            vertexBufferObjectManager
         )
-        parallaxLayer!!.setParallaxScrollFactor(10F)
 
-        backgroundSprite = SpriteBackground(
-            Sprite(
-                0F,
-                0F,
-                CAMERA_WIDTH,
-                CAMERA_HEIGHT,
-                mTextures!!.mBackgroundTextureRegion,
-                vertexBufferObjectManager
+        parallaxBackground!!.attachParallaxEntity(
+            ParallaxBackground.ParallaxEntity(
+                5F,
+                treesSprite
             )
         )
+        parallaxBackground!!.attachParallaxEntity(
+            ParallaxBackground.ParallaxEntity(
+                15F,
+                backgroundSprite!!
+            )
+        )
+
+        scene.background = parallaxBackground
 
         controllerSprite = object : Sprite(
             0F,
@@ -155,42 +188,43 @@ class MainActivity : SimpleBaseGameActivity() {
             mTextures!!.controllerFrameTextureRegion,
             vertexBufferObjectManager
         ) {
-            // TODO separate this event to another method
+
             override fun onAreaTouched(
                 pSceneTouchEvent: TouchEvent?,
                 pTouchAreaLocalX: Float,
                 pTouchAreaLocalY: Float
             ): Boolean {
+
                 // Change stick position
                 if (pSceneTouchEvent!!.isActionMove) {
 
                     val xPos = pSceneTouchEvent.x
                     val yPos = pSceneTouchEvent.y
 
-
-                    // Change idle condition
-                    mCharacter!!.characterConditions["idle"]!!["active"] = false
-                    mCharacter!!.characterConditions["idle"]!!["state"] = false
+                    mCharacter!!.hasCondition = true
 
                     // To run condition
                     mCharacter!!.characterConditions["run"]!!["active"] = true
 
-                    // TODO depends from direction of the stick change condition
+                    // If stick is to the right side then change direction
+                    mCharacter!!.spriteDirection =
+                        xPos >= abs(controllerSprite!!.width * 0.5F) && xPos >= 0
 
                     // Stick position checking
                     val displacement =
-                        (mTextures!!.controllerFrameTextureRegion!!.width / 2 - xPos - mTextures!!.controllerStickTextureRegion!!.width / 2).toDouble().pow(
+                        (controllerSprite!!.width / 2 - xPos - controllerStickSprite!!.width / 2).toDouble().pow(
                             2.0
                         ) +
-                                (CAMERA_HEIGHT - mTextures!!.controllerFrameTextureRegion!!.height / 2 - yPos).toDouble().pow(
+                                (CAMERA_HEIGHT - controllerSprite!!.height / 2 - yPos).toDouble().pow(
                                     2.0
                                 )
                     val baseRadius =
-                        (mTextures!!.controllerFrameTextureRegion!!.width / 2 + mTextures!!.controllerStickTextureRegion!!.width / 2).toDouble()
+                        (controllerSprite!!.width / 2 + controllerStickSprite!!.width / 2).toDouble()
                             .pow(2.0)
                     if (displacement <= baseRadius) {
                         controllerStickSprite!!.setPosition(xPos, yPos)
                     }
+
                     // If outside the frame, set position near the frame to the same direction
 
                     else {
@@ -199,6 +233,7 @@ class MainActivity : SimpleBaseGameActivity() {
                             defaultStickPos[0] + (xPos - defaultStickPos[0]) * ratio
                         val constrainedY =
                             defaultStickPos[1] + (yPos - defaultStickPos[1]) * ratio
+
 
                         controllerStickSprite!!.setPosition(
                             (constrainedX).toFloat(),
@@ -213,21 +248,15 @@ class MainActivity : SimpleBaseGameActivity() {
                         defaultStickPos[1]
                     )
 
-                    // Set idle condition
-                    mCharacter!!.characterConditions["idle"]!!["active"] = true
-                    mCharacter!!.characterConditions["idle"]!!["state"] = true
-
                     mCharacter!!.characterConditions["run"]!!["active"] = false
                     mCharacter!!.characterConditions["run"]!!["state"] = false
-
+                    mCharacter!!.hasCondition = false
                     return false
                 }
 
                 return true
             }
         }
-
-
 
         controllerStickSprite = Sprite(
             controllerSprite!!.width / 4,
@@ -256,40 +285,22 @@ class MainActivity : SimpleBaseGameActivity() {
                 pTouchAreaLocalX: Float,
                 pTouchAreaLocalY: Float
             ): Boolean {
-                return if (pSceneTouchEvent!!.isActionDown) {
+                return if (pSceneTouchEvent!!.isActionMove || pSceneTouchEvent.isActionDown) {
 
                     attackButtonSprite!!.red = 0F
-
-                    mCharacter!!.characterConditions = mCharacter!!.zeroizeConditions()
                     mCharacter!!.characterConditions["attack"]!!["active"] = true
+                    mCharacter!!.hasCondition = true
                     true
                 } else {
-                    attackButtonSprite!!.red = 1F
-
                     mCharacter!!.characterConditions["attack"]!!["active"] = false
-                    mCharacter!!.characterConditions["attack"]!!["state"] = false
-
-                    mCharacter!!.characterConditions["idle"]!!["active"] = true
-                    mCharacter!!.characterConditions["idle"]!!["state"] = true
+                    attackButtonSprite!!.red = 1F
+                    mCharacter!!.hasCondition = false
                     false
                 }
             }
         }
 
-        // Character attack animation
-
-        scene.background = backgroundSprite
-
-        scene.attachChild(controllerStickSprite)
-        scene.attachChild(controllerSprite)
-        scene.attachChild(attackButtonSprite)
-
-        // Register touch areas
-        scene.registerTouchArea(controllerSprite)
-        scene.registerTouchArea(attackButtonSprite)
-
         // Drawing health bar
-
         healthBarSprite = Sprite(
             0F,
             0F,
@@ -309,11 +320,21 @@ class MainActivity : SimpleBaseGameActivity() {
             vertexBufferObjectManager
         )
 
-        scene.attachChild(healthBarSpriteFilling)
-        scene.attachChild(healthBarSprite)
+        // Adds fpsText to the hud
+        hudLayer!!.attachChild(controllerStickSprite)
+        hudLayer!!.attachChild(controllerSprite)
+        hudLayer!!.attachChild(healthBarSpriteFilling)
+        hudLayer!!.attachChild(healthBarSprite)
+        hudLayer!!.attachChild(attackButtonSprite)
+        hudLayer!!.attachChild(coinsCounter)
+        hudLayer!!.attachChild(fpsText)
 
-        // Set text
-        scene.attachChild(coinsCounter)
+        // Register touch areas
+        hudLayer!!.registerTouchArea(controllerSprite)
+        hudLayer!!.registerTouchArea(attackButtonSprite)
+
+        // Adds the HUD to your camera
+        this.mCamera!!.hud = hudLayer
 
         // Start globalTimer
         startGlobalFrameTimer(scene)
@@ -336,6 +357,7 @@ class MainActivity : SimpleBaseGameActivity() {
                             if (mCharacter!!.characterConditions["die"]!!["state"] == false) {
                                 mCharacter!!.characterConditions["die"]!!["state"] = true
                                 // Clear previous animation
+
                                 characterAnimation!!.stopAnimation()
 
                                 // If animation of the death is not running
@@ -359,6 +381,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                 // TODO Show death screen
                                 isTimerActive = false
                                 scene.detachChild(characterAnimation)
+                                mCamera!!.hud.isVisible = false
 
                                 with(enemiesList.iterator()) {
                                     forEach {
@@ -371,22 +394,10 @@ class MainActivity : SimpleBaseGameActivity() {
                                 enemyTimerTask!!.cancel()
                             }
 
-                            // Start running animation
                         } else {
-                            if (mCharacter!!.characterConditions["idle"]!!["active"]!! && mCharacter!!.characterConditions["idle"]!!["state"]!!) {
 
-                                mCharacter!!.characterConditions["idle"]!!["state"] = false
-
-                                scene.detachChild(characterAnimation)
-
-                                characterAnimation = mCharacter!!.setIdleAnimation(
-                                    characterPositionX,
-                                    characterPositionY
-                                )
-                                characterAnimation!!.animate(mCharacter!!.idleFrameDuration)
-                                scene.attachChild(characterAnimation)
-
-                            } else if (mCharacter!!.characterConditions["run"]!!["active"]!!) {
+                            // If running
+                            if (mCharacter!!.characterConditions["run"]!!["active"]!! && !mCharacter!!.characterConditions["attack"]!!["active"]!!) {
 
                                 // If animation of the running had not been run
                                 if (!mCharacter!!.characterConditions["run"]!!["state"]!!) {
@@ -401,73 +412,121 @@ class MainActivity : SimpleBaseGameActivity() {
                                         characterPositionY
                                     )
 
+
                                     // Start running animation
                                     characterAnimation!!.animate(mCharacter!!.runFrameDuration)
                                     scene.attachChild(characterAnimation)
                                 }
 
-                                if (scene.x <= 500) {
-
-                                    // If middle of the screen hasn't been reached
-                                    if (characterPositionX < CAMERA_WIDTH / 2 - controllerSprite!!.width / 2) {
-                                        characterAnimation!!.setPosition(
-                                            characterPositionX,
-                                            characterPositionY
-                                        )
-                                        // Increment characters position each tick
-                                        characterPositionX += characterAnimation!!.width * 0.05F
-
-                                    } else {
-                                        parallaxPosition =
-                                            parallaxPosition.minus(CAMERA_WIDTH * 0.0005F)
-                                        parallaxLayer!!.setParallaxValue(parallaxPosition)
-
-                                        if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
-                                            val enemy = Enemies(
-                                                this@MainActivity,
-                                                engine
-                                            )
-
-                                            // Remove enemies for saving a phone performance
-                                            if (enemiesList.size > 3) {
-                                                runOnUpdateThread {
-                                                    scene.detachChild(enemiesList.values.first())
-                                                }
-                                                enemiesList.remove(enemiesList.keys.first())
-                                            }
-                                            val enemySprite =
-                                                enemy.spawnEnemy(CAMERA_WIDTH, CAMERA_HEIGHT)
-
-                                            // Timer for changing position of the animation
-                                            enemyTimer = Timer()
-                                            enemyTimerTask = object : TimerTask() {
-                                                override fun run() {
-                                                    enemySprite.x -= enemySprite.width * 0.04F
-                                                }
-                                            }
-                                            enemyTimer!!.scheduleAtFixedRate(enemyTimerTask, 0, 100)
-
-                                            enemiesList[enemy] = enemySprite
-
-                                            scene.attachChild(enemySprite)
-                                        }
-
-                                    }
-
-                                }
-                            }
-                        }
-                        if (mCharacter!!.characterConditions["attack"]!!["active"]!!) {
-                            if (!mCharacter!!.characterConditions["attack"]!!["state"]!!) {
-                                scene.detachChild(characterAnimation)
-                                characterAnimation = mCharacter!!.setAttackAnimation(
+                                characterAnimation!!.setPosition(
                                     characterPositionX,
                                     characterPositionY
                                 )
-                                characterAnimation!!.animate(mCharacter!!.attackFrameDuration)
-                                scene.attachChild(characterAnimation)
-                                mCharacter!!.characterConditions["attack"]!!["state"] = true
+
+//                                if (characterAnimation!!.isFlippedHorizontal) {} else {}
+
+                                if (characterAnimation!!.isFlippedHorizontal) {
+
+                                    // Decrement characters position each tick
+                                    characterPositionX -= characterAnimation!!.width * 0.05F
+                                    mCamera!!.setCenter(
+                                        characterPositionX + characterAnimation!!.width * .5F,
+                                        mCamera!!.targetCenterY
+                                    )
+
+                                    // Background negative shift
+                                    parallaxPosition += 1
+                                    parallaxBackground!!.setParallaxValue(parallaxPosition)
+                                } else {
+                                    // Increment characters position each tick
+                                    characterPositionX += characterAnimation!!.width * 0.05F
+                                    mCamera!!.setCenter(
+                                        characterPositionX + characterAnimation!!.width * .5F,
+                                        mCamera!!.targetCenterY
+                                    )
+                                    // Background negative shift
+                                    parallaxPosition -= 1
+                                    parallaxBackground!!.setParallaxValue(parallaxPosition)
+
+                                    if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
+                                        val enemy = Enemies(
+                                            this@MainActivity,
+                                            engine
+                                        )
+                                        // Remove enemies for saving a phone performance
+                                        if (enemiesList.size > 3) {
+                                            runOnUpdateThread {
+                                                scene.detachChild(enemiesList.values.first())
+                                            }
+                                            enemiesList.remove(enemiesList.keys.first())
+                                        }
+                                        val enemySprite =
+                                            enemy.spawnEnemy(CAMERA_WIDTH, CAMERA_HEIGHT)
+
+                                        // Timer for changing position of the animation
+                                        enemyTimer = Timer()
+                                        enemyTimerTask = object : TimerTask() {
+                                            override fun run() {
+                                                enemySprite.x -= enemySprite.width * 0.04F
+                                            }
+                                        }
+                                        enemyTimer!!.scheduleAtFixedRate(enemyTimerTask, 0, 100)
+
+                                        enemiesList[enemy] = enemySprite
+                                        enemySprite.x =
+                                            mCamera!!.centerX + CAMERA_WIDTH / 2 - (enemySprite.width)
+                                        scene.attachChild(enemySprite)
+                                        Log.v(
+                                            "Spawned ",
+                                            "${1},${2}".format(enemySprite.x, enemySprite.y)
+                                        )
+                                    }
+                                }
                             }
+                            if (mCharacter!!.characterConditions["attack"]!!["active"]!!) {
+
+                                if (!mCharacter!!.characterConditions["attack"]!!["state"]!!) {
+                                    mCharacter!!.characterConditions["attack"]!!["state"] = true
+                                    scene.detachChild(characterAnimation)
+                                    characterAnimation = mCharacter!!.setAttackAnimation(
+                                        characterPositionX,
+                                        characterPositionY
+                                    )
+
+                                    if (!characterAnimation!!.isAnimationRunning) {
+                                        characterAnimation!!.animate(mCharacter!!.attackFrameDuration)
+                                        scene.attachChild(characterAnimation)
+                                    }
+                                }
+                                if (characterAnimation!!.currentTileIndex >= characterAnimation!!.tileCount - 1) {
+//                                    mCharacter!!.characterConditions["attack"]!!["active"] = false
+                                    mCharacter!!.characterConditions["attack"]!!["state"] = false
+
+                                }
+
+                            }
+
+                            // Else default idle
+                            else {
+                                if (!mCharacter!!.hasCondition) {
+                                    scene.detachChild(characterAnimation)
+                                    mCharacter!!.hasCondition = true
+
+                                    characterAnimation = mCharacter!!.setIdleAnimation(
+                                        characterPositionX,
+                                        characterPositionY
+                                    )
+                                    characterAnimation!!.animate(mCharacter!!.idleFrameDuration)
+                                    scene.attachChild(characterAnimation)
+                                }
+                            }
+                        }
+
+                        // Flip sprite horizontally by current direction
+                        if (!mCharacter!!.spriteDirection) {
+                            characterAnimation!!.setFlipped(true, false)
+                        } else {
+                            characterAnimation!!.setFlipped(false, false)
                         }
                     }
 
@@ -475,7 +534,12 @@ class MainActivity : SimpleBaseGameActivity() {
                     with(enemiesList.iterator()) {
                         forEach {
                             if (characterAnimation!!.collidesWith(it.value)) {
-                                if (mCharacter!!.characterConditions["attack"]!!["state"] == true) {
+                                if (mCharacter!!.characterConditions["attack"]!!["active"] == true ||
+                                    mCharacter!!.characterConditions["attack"]!!["state"] == true
+                                ) {
+                                    // TODO On collides change enemy animation to attack
+                                    // TODO The enemy must follow the player
+
                                     if (it.key.healthPoints <= 0) {
                                         // Make heal after kill
                                         mCharacter!!.healthPoints += 20F
@@ -492,12 +556,12 @@ class MainActivity : SimpleBaseGameActivity() {
                                         val coinSprite = mItems.dropCoin(
                                             CAMERA_WIDTH, CAMERA_HEIGHT
                                         )
+                                        coinSprite.x -= itemsList.size * coinSprite.width * .5F
                                         itemsList[mItems] = coinSprite
                                         coinsCounter!!.text = itemsList.size.toString()
                                         if (itemsList.size < 10) {
-                                            scene.attachChild(coinSprite)
+                                            hudLayer!!.attachChild(coinSprite)
                                         }
-
                                         remove()
                                     } else {
                                         it.value.green = 0.5F
