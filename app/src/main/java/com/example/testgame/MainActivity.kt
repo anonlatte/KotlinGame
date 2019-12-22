@@ -30,7 +30,6 @@ import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.system.exitProcess
 
-
 class MainActivity : SimpleBaseGameActivity() {
 
     private var mCharacter: Character? = null
@@ -72,6 +71,7 @@ class MainActivity : SimpleBaseGameActivity() {
     }
 
     override fun onCreateEngine(pEngineOptions: EngineOptions?): Engine {
+
         return LimitedFPSEngine(pEngineOptions, 60)
     }
 
@@ -358,12 +358,12 @@ class MainActivity : SimpleBaseGameActivity() {
                     runOnUpdateThread {
 
                         if (mCharacter!!.healthPoints <= 0) {
-                            // Identify death state
 
+                            // Identify death state
                             if (mCharacter!!.characterConditions["die"]!!["state"] == false) {
                                 mCharacter!!.characterConditions["die"]!!["state"] = true
-                                // Clear previous animation
 
+                                // Clear previous animation
                                 characterAnimation!!.stopAnimation()
 
                                 // If animation of the death is not running
