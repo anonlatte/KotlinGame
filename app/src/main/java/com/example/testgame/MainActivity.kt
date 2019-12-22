@@ -1,8 +1,12 @@
 package com.example.testgame
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Point
-import android.util.Log
+import androidx.appcompat.app.AlertDialog
 import org.andengine.engine.Engine
 import org.andengine.engine.LimitedFPSEngine
 import org.andengine.engine.camera.SmoothCamera
@@ -24,6 +28,7 @@ import org.andengine.ui.activity.SimpleBaseGameActivity
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.pow
+import kotlin.system.exitProcess
 
 
 class MainActivity : SimpleBaseGameActivity() {
@@ -34,8 +39,8 @@ class MainActivity : SimpleBaseGameActivity() {
     private var mCamera: SmoothCamera? = null
 
     private var isTimerActive: Boolean = false
-    private var timer: Timer? = null
-    private var timerTask: TimerTask? = null
+    private var characterTimer: Timer? = null
+    private var characterTimerTask: TimerTask? = null
 
     private var fpsText: Text? = null
     private var hudLayer: HUD? = null
@@ -93,6 +98,7 @@ class MainActivity : SimpleBaseGameActivity() {
         mCharacter!!.characterHeight = CAMERA_HEIGHT / 37 * 6
         characterPositionX = CAMERA_HEIGHT * 0.3F
         characterPositionY = CAMERA_HEIGHT - mCharacter!!.characterHeight * 1.625F
+        mCamera!!.setCenter(characterPositionX, mCamera!!.targetCenterY)
         mFont = FontFactory.createFromAsset(
             this.fontManager,
             this.textureManager,
@@ -345,10 +351,10 @@ class MainActivity : SimpleBaseGameActivity() {
         if (!isTimerActive) {
             val enemiesList = mutableMapOf<Enemies, AnimatedSprite>()
             val itemsList = mutableMapOf<Items, Sprite>()
-            timer = Timer()
-            timerTask = object : TimerTask() {
+            characterTimer = Timer()
+            // Character Conditions
+            characterTimerTask = object : TimerTask() {
                 override fun run() {
-
                     runOnUpdateThread {
 
                         if (mCharacter!!.healthPoints <= 0) {
@@ -389,6 +395,49 @@ class MainActivity : SimpleBaseGameActivity() {
                                         remove()
                                     }
                                 }
+
+                                runOnUiThread {
+
+                                    val builder = AlertDialog.Builder(this@MainActivity)
+
+                                    // Set the alert dialog title
+                                    builder.setTitle("You're dead")
+
+                                    // Display a message on alert dialog
+                                    builder.setMessage("Wanna restart?")
+
+                                    // Display a negative button on alert dialog
+                                    builder.setPositiveButton("Yes") { _, _ ->
+                                        val mRestartActivity = Intent(
+                                            this@MainActivity, MainActivity::class.java
+                                        )
+                                        val mPendingIntentId = 123456
+                                        val mPendingIntent = PendingIntent.getActivity(
+                                            this@MainActivity,
+                                            mPendingIntentId,
+                                            mRestartActivity,
+                                            PendingIntent.FLAG_CANCEL_CURRENT
+                                        )
+                                        val mgr: AlarmManager =
+                                            this@MainActivity.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                                        mgr.set(
+                                            AlarmManager.RTC,
+                                            System.currentTimeMillis(),
+                                            mPendingIntent
+                                        )
+                                        exitProcess(0)
+                                    }
+
+                                    // Display a neutral button on alert dialog
+                                    builder.setNegativeButton("No") { _, _ -> }
+
+                                    // Finally, make the alert dialog using builder
+                                    val dialog: AlertDialog = builder.create()
+
+                                    // Display the alert dialog on app interface
+                                    dialog.show()
+                                }
+
 
                                 this.cancel()
                                 enemyTimerTask!!.cancel()
@@ -447,40 +496,6 @@ class MainActivity : SimpleBaseGameActivity() {
                                     // Background negative shift
                                     parallaxPosition -= 1
                                     parallaxBackground!!.setParallaxValue(parallaxPosition)
-
-                                    if (abs(parallaxPosition.toInt()) % (Random().nextInt(41) + 40) == 0) {
-                                        val enemy = Enemies(
-                                            this@MainActivity,
-                                            engine
-                                        )
-                                        // Remove enemies for saving a phone performance
-                                        if (enemiesList.size > 3) {
-                                            runOnUpdateThread {
-                                                scene.detachChild(enemiesList.values.first())
-                                            }
-                                            enemiesList.remove(enemiesList.keys.first())
-                                        }
-                                        val enemySprite =
-                                            enemy.spawnEnemy(CAMERA_WIDTH, CAMERA_HEIGHT)
-
-                                        // Timer for changing position of the animation
-                                        enemyTimer = Timer()
-                                        enemyTimerTask = object : TimerTask() {
-                                            override fun run() {
-                                                enemySprite.x -= enemySprite.width * 0.04F
-                                            }
-                                        }
-                                        enemyTimer!!.scheduleAtFixedRate(enemyTimerTask, 0, 100)
-
-                                        enemiesList[enemy] = enemySprite
-                                        enemySprite.x =
-                                            mCamera!!.centerX + CAMERA_WIDTH / 2 - (enemySprite.width)
-                                        scene.attachChild(enemySprite)
-                                        Log.v(
-                                            "Spawned ",
-                                            "${1},${2}".format(enemySprite.x, enemySprite.y)
-                                        )
-                                    }
                                 }
                             }
                             if (mCharacter!!.characterConditions["attack"]!!["active"]!!) {
@@ -501,9 +516,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                 if (characterAnimation!!.currentTileIndex >= characterAnimation!!.tileCount - 1) {
 //                                    mCharacter!!.characterConditions["attack"]!!["active"] = false
                                     mCharacter!!.characterConditions["attack"]!!["state"] = false
-
                                 }
-
                             }
 
                             // Else default idle
@@ -529,10 +542,16 @@ class MainActivity : SimpleBaseGameActivity() {
                             characterAnimation!!.setFlipped(false, false)
                         }
                     }
-
+                }
+            }
+            enemyTimer = Timer()
+            enemyTimerTask = object : TimerTask() {
+                override fun run() {
                     // Checking collision with enemies
                     with(enemiesList.iterator()) {
                         forEach {
+                            // Move enemy on each tick
+                            it.value.x -= it.value.width * 0.04F
                             if (characterAnimation!!.collidesWith(it.value)) {
                                 if (mCharacter!!.characterConditions["attack"]!!["active"] == true ||
                                     mCharacter!!.characterConditions["attack"]!!["state"] == true
@@ -564,6 +583,22 @@ class MainActivity : SimpleBaseGameActivity() {
                                         }
                                         remove()
                                     } else {
+                                        // enemy attack animation
+                                        it.key.characterConditions["attack"]!!["active"] = true
+                                        if (!it.key.characterConditions["attack"]!!["active"]!!) {
+                                            scene.detachChild(it.value)
+                                            val tempPositionX = it.value.x
+                                            it.setValue(
+                                                it.key.spawnEnemy(
+                                                    CAMERA_WIDTH,
+                                                    CAMERA_HEIGHT
+                                                )
+                                            )
+                                            it.value.x = tempPositionX
+                                            it.value.animate(it.key.attackFrameDuration)
+                                            scene.attachChild(it.value)
+                                        }
+
                                         it.value.green = 0.5F
                                         it.value.blue = 0.5F
                                         it.key.healthPoints -= 5
@@ -577,9 +612,36 @@ class MainActivity : SimpleBaseGameActivity() {
 
                         }
                     }
+
+                    // spawn enemy with 2% chance
+                    if (Random().nextInt(100) == 10) {
+                        val enemy = Enemies(
+                            this@MainActivity,
+                            engine
+                        )
+                        // Remove enemies for saving a phone performance
+                        if (enemiesList.size > 3) {
+                            runOnUpdateThread {
+                                scene.detachChild(enemiesList.values.first())
+                            }
+                            enemiesList.remove(enemiesList.keys.first())
+                        }
+                        val enemySprite =
+                            enemy.spawnEnemy(CAMERA_WIDTH, CAMERA_HEIGHT)
+
+                        // Timer for changing position of the animation
+                        enemySprite.x -= enemySprite.width * 0.04F
+
+                        enemiesList[enemy] = enemySprite
+                        enemySprite.x =
+                            mCamera!!.centerX + CAMERA_WIDTH / 2 - (enemySprite.width)
+                        scene.attachChild(enemySprite)
+                    }
                 }
             }
-            timer!!.scheduleAtFixedRate(timerTask, 0, 100)
+
+            characterTimer!!.scheduleAtFixedRate(characterTimerTask, 0, 100)
+            enemyTimer!!.scheduleAtFixedRate(enemyTimerTask, 0, 100)
             isTimerActive = true
         }
     }

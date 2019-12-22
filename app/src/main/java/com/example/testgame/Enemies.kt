@@ -25,7 +25,7 @@ class Enemies(activity: SimpleBaseGameActivity, engine: Engine) : Character(acti
 
         minotaurRunTextureRegion =
             BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(
-                minotaurTexture, activity, "minotaur/minotaur_run.png", 0, 0, 8, 1
+                minotaurTexture, activity, "minotaur/minotaur_run_fixed.png", 0, 0, 8, 1
             )
         minotaurAttackTextureRegion =
             BitmapTextureAtlasTextureRegionFactory.createTiledFromAsset(
@@ -45,10 +45,10 @@ class Enemies(activity: SimpleBaseGameActivity, engine: Engine) : Character(acti
     ): AnimatedSprite {
         val mEnemy = Enemies(this.mActivity!!, this.engine!!)
 
-        val enemyWidth = screenWidth / 96F * 14
-        val enemyHeight = screenHeight / 93F * 21
+        val enemyWidth = screenWidth / 52F * 5
+        val enemyHeight = screenHeight / 44F * 6
         val enemyPositionX = screenWidth - enemyWidth
-        val enemyPositionY = screenHeight - enemyHeight * 1.125F
+        val enemyPositionY = screenHeight - enemyHeight * 1.7F
         val enemyAnimation = mEnemy.setRunAnimation(
             enemyPositionX,
             enemyPositionY,
