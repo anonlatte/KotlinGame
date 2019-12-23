@@ -19,7 +19,6 @@ import org.andengine.entity.scene.background.ParallaxBackground
 import org.andengine.entity.sprite.AnimatedSprite
 import org.andengine.entity.sprite.Sprite
 import org.andengine.entity.text.Text
-import org.andengine.entity.util.FPSLogger
 import org.andengine.input.touch.TouchEvent
 import org.andengine.opengl.font.Font
 import org.andengine.opengl.font.FontFactory
@@ -42,6 +41,7 @@ class MainActivity : SimpleBaseGameActivity() {
     private var characterTimerTask: TimerTask? = null
 
     private var fpsText: Text? = null
+    private var infoText: Text? = null
     private var hudLayer: HUD? = null
     private var controllerSprite: Sprite? = null
     private var controllerStickSprite: Sprite? = null
@@ -85,6 +85,7 @@ class MainActivity : SimpleBaseGameActivity() {
         aspectRatio = CAMERA_WIDTH / CAMERA_HEIGHT
 
         this.mCamera = SmoothCamera(0F, 0F, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_WIDTH, 150F, 1.3F)
+
         return EngineOptions(
             true, ScreenOrientation.LANDSCAPE_FIXED,
             RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), mCamera
@@ -115,26 +116,28 @@ class MainActivity : SimpleBaseGameActivity() {
         mFont!!.load()
 
         hudLayer = HUD()
-        fpsText = Text(
+        /*fpsText = Text(
             0F,
             0F,
             this.mFont,
             "Fps: ?",
             "Fps: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX".length,
             vertexBufferObjectManager
-        )
+        )*/
 
 
         //Attach the FPSLogger
+/*
         engine.registerUpdateHandler(object : FPSLogger(0.5f) {
             override fun onLogFPS() {
                 val fpsString = String.format(
                     "FPS: %.2f",
                     this.mFrames / this.mSecondsElapsed
                 )
-                fpsText!!.text = fpsString
+//                fpsText!!.text = fpsString
             }
         })
+*/
 
         coinsCounter = Text(
             CAMERA_WIDTH - CAMERA_WIDTH * 0.15F,
@@ -334,6 +337,62 @@ class MainActivity : SimpleBaseGameActivity() {
         hudLayer!!.attachChild(healthBarSprite)
         hudLayer!!.attachChild(attackButtonSprite)
         hudLayer!!.attachChild(coinsCounter)
+
+        infoText = object : Text(
+            CAMERA_WIDTH - CAMERA_WIDTH * 0.05F,
+            CAMERA_HEIGHT * 0.2F,
+            mFont,
+            "?",
+            vertexBufferObjectManager
+        ) {
+            override fun onAreaTouched(
+                pSceneTouchEvent: TouchEvent?,
+                pTouchAreaLocalX: Float,
+                pTouchAreaLocalY: Float
+            ): Boolean {
+                characterTimer!!.cancel()
+                enemyTimer!!.cancel()
+                isTimerActive = false
+                infoText!!.setColor(1F, 0F, 0F)
+
+                runOnUiThread {
+
+                    val builder = AlertDialog.Builder(this@MainActivity)
+
+                    // Set the alert dialog title
+                    builder.setTitle("Paused")
+
+                    // Display a message on alert dialog
+                    builder.setMessage("Show confidentiality policy")
+
+                    // Display a negative button on alert dialog
+                    builder.setPositiveButton("Yes") { _, _ ->
+
+                        val intent = Intent(this@MainActivity, WebviewActivity::class.java)
+
+
+                        startActivity(intent)
+                    }
+
+                    // Display a neutral button on alert dialog
+                    builder.setNegativeButton("No") { _, _ ->
+                        startGlobalFrameTimer(scene)
+                        infoText!!.setColor(1F, 1F, 1F)
+                    }
+
+                    // Finally, make the alert dialog using builder
+                    val dialog: AlertDialog = builder.create()
+
+                    // Display the alert dialog on app interface
+                    dialog.show()
+                }
+
+                return true
+            }
+        }
+        // For webview opening add
+        hudLayer!!.attachChild(infoText)
+        hudLayer!!.registerTouchArea(infoText)
 //        hudLayer!!.attachChild(fpsText)
 
         // Register touch areas
@@ -618,7 +677,7 @@ class MainActivity : SimpleBaseGameActivity() {
                     }
 
                     // spawn enemy with 2% chance
-                    if (Random().nextInt(100) == 10) {
+                    if (Random().nextInt(100) == 20) {
                         val enemy = Enemies(
                             this@MainActivity,
                             engine
