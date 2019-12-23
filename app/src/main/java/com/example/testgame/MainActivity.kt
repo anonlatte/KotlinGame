@@ -298,7 +298,8 @@ class MainActivity : SimpleBaseGameActivity() {
                     mCharacter!!.hasCondition = true
                     true
                 } else {
-                    mCharacter!!.characterConditions["attack"]!!["active"] = false
+
+//                    mCharacter!!.characterConditions["attack"]!!["active"] = false
                     attackButtonSprite!!.red = 1F
                     mCharacter!!.hasCondition = false
                     false
@@ -333,7 +334,7 @@ class MainActivity : SimpleBaseGameActivity() {
         hudLayer!!.attachChild(healthBarSprite)
         hudLayer!!.attachChild(attackButtonSprite)
         hudLayer!!.attachChild(coinsCounter)
-        hudLayer!!.attachChild(fpsText)
+//        hudLayer!!.attachChild(fpsText)
 
         // Register touch areas
         hudLayer!!.registerTouchArea(controllerSprite)
@@ -503,6 +504,7 @@ class MainActivity : SimpleBaseGameActivity() {
                                 if (!mCharacter!!.characterConditions["attack"]!!["state"]!!) {
                                     mCharacter!!.characterConditions["attack"]!!["state"] = true
                                     scene.detachChild(characterAnimation)
+
                                     characterAnimation = mCharacter!!.setAttackAnimation(
                                         characterPositionX,
                                         characterPositionY
@@ -514,8 +516,10 @@ class MainActivity : SimpleBaseGameActivity() {
                                     }
                                 }
                                 if (characterAnimation!!.currentTileIndex >= characterAnimation!!.tileCount - 1) {
-//                                    mCharacter!!.characterConditions["attack"]!!["active"] = false
+                                    mCharacter!!.characterConditions["attack"]!!["active"] = false
                                     mCharacter!!.characterConditions["attack"]!!["state"] = false
+                                } else {
+                                    mCharacter!!.characterConditions["attack"]!!["active"] = true
                                 }
                             }
 
@@ -553,57 +557,57 @@ class MainActivity : SimpleBaseGameActivity() {
                             // Move enemy on each tick
                             it.value.x -= it.value.width * 0.04F
                             if (characterAnimation!!.collidesWith(it.value)) {
-                                if (mCharacter!!.characterConditions["attack"]!!["active"] == true ||
-                                    mCharacter!!.characterConditions["attack"]!!["state"] == true
-                                ) {
-                                    // TODO On collides change enemy animation to attack
-                                    // TODO The enemy must follow the player
 
-                                    if (it.key.healthPoints <= 0) {
-                                        // Make heal after kill
-                                        mCharacter!!.healthPoints += 20F
-                                        // barHP = (HP / maxHP) * barMaxHP.Width
-                                        healthBarSpriteFilling!!.width =
-                                            (mCharacter!!.healthPoints / 100) * (CAMERA_WIDTH / 5.5F)
+                                // TODO On collides change enemy animation to attack
+                                // TODO The enemy must follow the player
 
-                                        runOnUpdateThread {
-                                            scene.detachChild(it.value)
-                                        }
+                                if (it.key.healthPoints <= 0) {
+                                    // Make heal after kill
+                                    mCharacter!!.healthPoints += 20F
+                                    // barHP = (HP / maxHP) * barMaxHP.Width
+                                    healthBarSpriteFilling!!.width =
+                                        (mCharacter!!.healthPoints / 100) * (CAMERA_WIDTH / 5.5F)
 
-                                        // Drop a coin
-                                        val mItems = Items(this@MainActivity, engine)
-                                        val coinSprite = mItems.dropCoin(
-                                            CAMERA_WIDTH, CAMERA_HEIGHT
-                                        )
-                                        coinSprite.x -= itemsList.size * coinSprite.width * .5F
-                                        itemsList[mItems] = coinSprite
-                                        coinsCounter!!.text = itemsList.size.toString()
-                                        if (itemsList.size < 10) {
-                                            hudLayer!!.attachChild(coinSprite)
-                                        }
-                                        remove()
-                                    } else {
-                                        // enemy attack animation
-                                        it.key.characterConditions["attack"]!!["active"] = true
-                                        if (!it.key.characterConditions["attack"]!!["active"]!!) {
-                                            scene.detachChild(it.value)
-                                            val tempPositionX = it.value.x
-                                            it.setValue(
-                                                it.key.spawnEnemy(
-                                                    CAMERA_WIDTH,
-                                                    CAMERA_HEIGHT
-                                                )
+                                    runOnUpdateThread {
+                                        scene.detachChild(it.value)
+                                    }
+
+                                    // Drop a coin
+                                    val mItems = Items(this@MainActivity, engine)
+                                    val coinSprite = mItems.dropCoin(
+                                        CAMERA_WIDTH, CAMERA_HEIGHT
+                                    )
+                                    coinSprite.x -= itemsList.size * coinSprite.width * .5F
+                                    itemsList[mItems] = coinSprite
+                                    coinsCounter!!.text = itemsList.size.toString()
+                                    if (itemsList.size < 10) {
+                                        hudLayer!!.attachChild(coinSprite)
+                                    }
+                                    remove()
+                                } else {
+                                    // enemy attack animation
+                                    it.key.characterConditions["attack"]!!["active"] = true
+                                    if (!it.key.characterConditions["attack"]!!["active"]!!) {
+                                        scene.detachChild(it.value)
+                                        val tempPositionX = it.value.x
+                                        it.setValue(
+                                            it.key.spawnEnemy(
+                                                CAMERA_WIDTH,
+                                                CAMERA_HEIGHT
                                             )
-                                            it.value.x = tempPositionX
-                                            it.value.animate(it.key.attackFrameDuration)
-                                            scene.attachChild(it.value)
-                                        }
-
-                                        it.value.green = 0.5F
-                                        it.value.blue = 0.5F
-                                        it.key.healthPoints -= 5
+                                        )
+                                        it.value.x = tempPositionX
+                                        it.value.animate(it.key.attackFrameDuration)
+                                        scene.attachChild(it.value)
                                     }
                                 }
+
+                                if (mCharacter!!.characterConditions["attack"]!!["active"] == true && characterAnimation!!.isAnimationRunning) {
+                                    it.value.green = 0.5F
+                                    it.value.blue = 0.5F
+                                    it.key.healthPoints -= 5
+                                }
+
                                 mCharacter!!.healthPoints -= 1F
                                 // Every tick event set width of barHP = (HP / maxHP) * barMaxHP.Width
                                 healthBarSpriteFilling!!.width =
